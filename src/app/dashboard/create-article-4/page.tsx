@@ -384,7 +384,7 @@ export default function CreateArticle4Page() {
                       {sug.status === 'pending' && (
                         <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
                           <button onClick={() => updateSuggestionStatus(i, 'promoted')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: VS.success, borderColor: 'rgba(78,201,176,0.3)' }}><ThumbsUp size={10} /> Promote</button>
-                          <button onClick={() => window.open(sug.url && !sug.url.includes('google.com/search') ? sug.url : `https://www.google.com/search?q=${encodeURIComponent(sug.search_query)}&btnI=1`, '_blank')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px' }}><Eye size={10} /> View</button>
+                          <button onClick={() => window.open(sug.url, '_blank')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px' }}><Eye size={10} /> View</button>
                           <button onClick={() => updateSuggestionStatus(i, 'discarded')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: VS.error, borderColor: 'rgba(244,71,71,0.3)' }}><ThumbsDown size={10} /> Discard</button>
                         </div>
                       )}
