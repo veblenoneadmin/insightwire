@@ -33,7 +33,7 @@ function mdToHtml(text: string): string {
 
 // ── Types ─────────────────────────────────────────────────
 type SourceItem = { id: string; label: string; type: string; text: string };
-type SoftSuggestion = { source_type: string; description: string; search_query: string; status: 'pending' | 'promoted' | 'discarded'; additionalPrompt: string };
+type SoftSuggestion = { url: string; title: string; source_type: string; rationale: string; status: 'pending' | 'promoted' | 'discarded'; additionalPrompt: string };
 
 type WorkflowStage = 'sources' | 'brief' | 'article';
 
@@ -365,7 +365,9 @@ export default function CreateArticle4Page() {
                         {sug.status === 'promoted' && <span style={{ fontFamily: 'monospace', fontSize: '9px', color: VS.success }}>PROMOTED</span>}
                         {sug.status === 'discarded' && <span style={{ fontFamily: 'monospace', fontSize: '9px', color: VS.error }}>DISCARDED</span>}
                       </div>
-                      <div style={{ fontSize: '12px', color: VS.text1, lineHeight: 1.5, marginBottom: '6px' }}>{sug.description}</div>
+                      <div style={{ fontSize: '12px', color: VS.text0, fontWeight: 600, lineHeight: 1.4, marginBottom: '4px' }}>{sug.title}</div>
+                      <div style={{ fontSize: '11px', color: VS.text2, marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{sug.url}</div>
+                      <div style={{ fontSize: '12px', color: VS.text1, lineHeight: 1.5, marginBottom: '6px' }}>{sug.rationale}</div>
 
                       {/* Expanded panel when selected */}
                       {isSelected && sug.status === 'pending' && (
@@ -384,7 +386,7 @@ export default function CreateArticle4Page() {
                       {sug.status === 'pending' && (
                         <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
                           <button onClick={() => updateSuggestionStatus(i, 'promoted')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: VS.success, borderColor: 'rgba(78,201,176,0.3)' }}><ThumbsUp size={10} /> Promote</button>
-                          <button onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(sug.search_query)}`, '_blank')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px' }}><Eye size={10} /> View</button>
+                          <button onClick={() => window.open(sug.url, '_blank')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px' }}><Eye size={10} /> View</button>
                           <button onClick={() => updateSuggestionStatus(i, 'discarded')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: VS.error, borderColor: 'rgba(244,71,71,0.3)' }}><ThumbsDown size={10} /> Discard</button>
                         </div>
                       )}

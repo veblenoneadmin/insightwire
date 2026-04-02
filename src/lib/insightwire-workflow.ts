@@ -43,11 +43,46 @@ Soft sources are AI-generated recommendations. They are suggestions only and car
 
 ### Rules
 
-1. After hard sources are loaded and the brief is generated, recommend up to three soft sources that are likely relevant to the article angle. Each recommendation must include the source type (e.g. ASX announcement, government report, competitor article) and a one-sentence rationale for why it is relevant.
-2. Never use a soft source — or any information derived from it — in the brief or the article. A soft source has zero standing until the writer promotes it.
-3. The writer can approve a soft source as-is, edit the recommendation before approving, or discard it entirely.
-4. Once a writer promotes a soft source, it becomes a hard source. From that point, apply all hard source rules to it without exception.
-5. Present a feedback mechanism for each suggestion: like, edit, view, or dislike.
+1. After hard sources are loaded and the brief is generated, recommend up to three soft sources that are likely relevant to the article angle. Each recommendation must be a **specific, fetchable URL** — not a generic search suggestion or a description of a document type. The model must use web search to locate the actual source and return the direct link.
+2. Each recommendation must include:
+   - **URL** — the direct link to the specific page, document, or filing.
+   - **Source title** — the headline or document name as it appears at the URL.
+   - **Source type** — e.g. ASX announcement, ABS data release, ASIC enforcement notice, competitor press release, industry body report.
+   - **Rationale** — one sentence explaining why this source is relevant to the article angle derived from the hard sources.
+3. Prioritise authoritative, primary sources in this order:
+   - ASX announcements and company filings (asx.com.au)
+   - Regulator publications (asic.gov.au, accc.gov.au, austrac.gov.au)
+   - Government and statistical releases (abs.gov.au, treasury.gov.au)
+   - Company newsrooms and investor pages (direct corporate URLs)
+   - Credible business publications (afr.com, reuters.com, businessnewsaustralia.com)
+4. Never recommend a soft source that cannot be resolved to a real URL. If the model cannot find a specific link through web search, do not recommend that source — recommend a different one or return fewer than three.
+5. Never use a soft source — or any information derived from it — in the brief or the article. A soft source has zero standing until the writer promotes it.
+6. The writer can approve a soft source as-is, edit it before approving, or discard it entirely.
+7. Once a writer promotes a soft source, it becomes a hard source. From that point, apply all hard source rules to it without exception.
+8. Present a feedback mechanism for each suggestion: like, edit, view, or dislike.
+
+### Soft Source Output Format
+
+Each recommendation must be returned as structured JSON so the frontend can render clickable links and preview cards.
+
+\`\`\`json
+{
+  "soft_sources": [
+    {
+      "url": "https://www.asx.com.au/announcements/pdf/04567890.pdf",
+      "title": "FY25 Half-Year Results — Catapult Group International",
+      "source_type": "ASX announcement",
+      "rationale": "Contains the prior-period revenue figures needed to calculate growth rates referenced in the hard sources."
+    },
+    {
+      "url": "https://www.abs.gov.au/statistics/economy/business-indicators/business-conditions-and-sentiments/latest-release",
+      "title": "Business Conditions and Sentiments, March 2026 — ABS",
+      "source_type": "ABS data release",
+      "rationale": "Provides national business confidence data for the sector context paragraph."
+    }
+  ]
+}
+\`\`\`
 
 ---
 
@@ -63,7 +98,7 @@ The brief is the editorial anchor. It is produced from hard sources only and mus
    - **Key figures and dollar amounts** — revenue, valuations, deal sizes, percentages, dates.
    - **Who is quoted** — named individuals and their roles, with a note on the tone or stance of their quotes.
    - **Gaps or contradictions** — anything missing from the sources that a complete article would normally require, and any conflicts between sources.
-3. Do not smooth over contradictions. State them plainly (e.g. "Source A reports FY25 revenue of $48M; Source B states $52M. These figures have not been reconciled.").
+3. Do not smooth over contradictions. State them plainly (e.g. "Source A reports FY25 revenue of \\$48M; Source B states \\$52M. These figures have not been reconciled.").
 4. Do not begin article generation until the writer explicitly confirms the brief.
 
 ---
@@ -111,7 +146,7 @@ Each reference entry must include:
 \`\`\`
 ## References
 
-1. "Revenue rose 14 per cent to $48 million" — FY25 Annual Report (PDF), sourced from ASX company filing.
+1. "Revenue rose 14 per cent to \\$48 million" — FY25 Annual Report (PDF), sourced from ASX company filing.
 2. "We expect continued growth across all verticals" — CEO Interview Transcript (audio), sourced from BNA editorial recording.
 3. "The acquisition was completed on 12 March 2025" — Company Media Release (URL), sourced from corporate newsroom.
 \`\`\`
@@ -125,7 +160,7 @@ When the application needs to render references as interactive UI elements (e.g.
   "references": [
     {
       "index": 1,
-      "claim": "Revenue rose 14 per cent to $48 million",
+      "claim": "Revenue rose 14 per cent to \\$48 million",
       "source_title": "FY25 Annual Report",
       "source_type": "pdf",
       "origin": "ASX company filing",
@@ -179,13 +214,21 @@ Not every API call needs the full document. Send only the sections relevant to t
 | Stage | Sections to include in system prompt |
 |---|---|
 | **Brief generation** | Section 2 (Hard Sources) + Section 4 (Brief Generation) |
-| **Soft source suggestions** | Section 2 (Hard Sources) + Section 3 (Soft Sources) |
+| **Soft source suggestions** | Section 2 (Hard Sources) + Section 3 (Soft Sources) + **web search tool enabled** |
 | **Article generation** | Section 2 (Hard Sources) + Section 5 (Article Generation) + Section 6 (References) + full BNA style guide |
 | **Revision / rewrite** | Same as article generation, plus the writer's revision instructions as a user message |
+
+### Web search for soft source suggestions
+
+The soft source stage is the only stage that requires web search. Soft sources must be specific, fetchable URLs — not generic descriptions. Enable the web search tool on the API call for this stage only.
+
+Do not enable web search on the brief generation or article generation stages. Those stages must operate exclusively from hard sources with no external retrieval.
 
 ### Hard source injection
 
 When calling the API, pass hard source content as user messages — not as part of the system prompt. This keeps the system prompt stable across calls and makes source content easy to swap.
+
+For binary sources (PDFs, images, audio), convert to base64 and use the appropriate content block type, or pre-extract the text server-side and pass it as plain text with a label noting the original format.
 
 ### Structured output handling
 
@@ -207,7 +250,7 @@ Each hard source in the Source Manager should have a stable \`source_id\` (e.g. 
 |---|---|---|
 | Source loading | Writer uploads hard sources | Manual |
 | Brief generation | Hard sources only | Automatic after sources loaded |
-| Soft source suggestions | AI recommendation (not used in output) | Automatic after brief generated |
+| Soft source suggestions | Direct URLs to relevant external sources (not used in output) | Automatic after brief generated |
 | Soft source promotion | Writer approves → becomes hard source | Manual |
 | Article generation | Hard sources only | Writer confirms brief |
 | References section | Hard sources only | Automatic with article |
@@ -215,7 +258,7 @@ Each hard source in the Source Manager should have a stable \`source_id\` (e.g. 
 ### Core constraints
 
 - **Hard sources only.** No external knowledge. No inference. No gap-filling.
-- **Soft sources are inert.** They do not exist in the article pipeline until promoted.
+- **Soft sources are specific URLs, not search suggestions.** Every recommendation must be a fetchable link found via web search. They do not exist in the article pipeline until promoted.
 - **Brief before article.** Never generate an article without a confirmed brief.
 - **Contradictions are surfaced, not resolved.** The writer decides.
 - **Every claim is traceable.** If it cannot be mapped to a hard source, it does not appear in the article.

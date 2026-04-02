@@ -3,25 +3,29 @@ import Anthropic from '@anthropic-ai/sdk';
 import { WORKFLOW_SECTIONS } from '@/lib/insightwire-workflow';
 
 // Workflow Section 2 (Hard Sources) + Section 3 (Soft Sources)
+// Web search enabled per Section 7: "The soft source stage is the only stage that requires web search."
 const SUGGEST_SYSTEM_PROMPT = `${WORKFLOW_SECTIONS.HARD_SOURCES}
 
 ${WORKFLOW_SECTIONS.SOFT_SOURCES}
 
-You are an editorial assistant for Business News Australia. Based on the hard sources and the confirmed brief, recommend up to 3 soft sources that are likely relevant to the article angle.
+You are an editorial assistant for Business News Australia. Based on the hard sources and the confirmed brief, recommend up to 3 soft sources.
 
-Each recommendation must include:
-- source_type: the type of source (e.g. "ASX announcement", "government report", "competitor article", "industry data", "prior BNA coverage")
-- description: a one-sentence rationale for why it is relevant
-- search_query: a precise Google search query that will find this source as the top result. Be specific with company names, dates, and site: operators where appropriate.
+CRITICAL: Each recommendation must be a specific, fetchable URL — not a search suggestion. Use web search to find the actual source page and return the direct link.
 
-Return your recommendations as a JSON array inside a fenced code block tagged json:suggestions. Example:
+Return your recommendations as a JSON array inside a fenced code block tagged json:suggestions using this exact format:
 
 \`\`\`json:suggestions
 [
-  { "source_type": "ASX announcement", "description": "The company's most recent half-year results would provide revenue and EBITDA figures for context.", "search_query": "CompanyName ASX half year results 2025" },
-  { "source_type": "prior BNA coverage", "description": "BNA covered this company's previous capital raise 6 months ago.", "search_query": "site:businessnewsaustralia.com CompanyName raises" }
+  {
+    "url": "https://actual-direct-url-to-the-source.com/page",
+    "title": "Exact headline or document name as it appears at the URL",
+    "source_type": "ASX announcement",
+    "rationale": "One sentence explaining why this source is relevant."
+  }
 ]
 \`\`\`
+
+If you cannot find a real URL for a source through web search, do not include it. Return fewer than 3 rather than returning fake or guessed URLs.
 
 Output the JSON block only — no other text.`;
 
@@ -42,15 +46,20 @@ export async function POST(req: NextRequest) {
 
     const message = await client.messages.create({
       model: 'claude-opus-4-6',
-      max_tokens: 1000,
+      max_tokens: 1500,
       system: SUGGEST_SYSTEM_PROMPT,
+      // Enable web search per workflow Section 7
+      tools: [{ type: 'web_search_20250305' as const, name: 'web_search', max_uses: 5 }],
       messages: [{
         role: 'user',
-        content: `${topicBlock}BRIEF:\n${brief}\n\nHard sources loaded:\n${sourceLabels.map((l, i) => `${i + 1}. ${l}`).join('\n')}\n\nRecommend up to 3 relevant soft sources.`,
+        content: `${topicBlock}BRIEF:\n${brief}\n\nHard sources loaded:\n${sourceLabels.map((l, i) => `${i + 1}. ${l}`).join('\n')}\n\nUse web search to find up to 3 relevant soft sources as specific URLs. Return as JSON per the soft source output format.`,
       }],
     });
 
-    const output = message.content[0]?.type === 'text' ? message.content[0].text : '';
+    // Extract text from response (may have tool_use blocks from web search)
+    const textBlocks = message.content.filter(b => b.type === 'text');
+    const output = textBlocks.map(b => b.type === 'text' ? b.text : '').join('\n');
+
     const match = output.match(/```json:suggestions\s*\n([\s\S]*?)```/);
     let suggestions = [];
     if (match) {
