@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Plus, ChevronRight, Copy, Download, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Loader2 } from 'lucide-react';
+import { Plus, ChevronRight, Copy, Download, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Loader2, Upload } from 'lucide-react';
 
 // ── VS Dark palette ───────────────────────────────────────
 const VS = {
@@ -225,6 +225,54 @@ export default function CreateArticle4Page() {
   const updateSource   = (i: number, si: number, v: string) => setArticles(a => a.map((art, j) => j === i ? { ...art, sources: art.sources.map((s, k) => k === si ? v : s) } : art));
   const updateCategory = (i: number, v: string) => setCategories(c => c.map((cat, j) => j === i ? v : cat));
 
+  const extractFileText = async (file: File): Promise<string> => {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.txt')) {
+      return await file.text();
+    } else if (name.endsWith('.pdf')) {
+      const pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const pages: string[] = [];
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        pages.push(content.items.map((item) => ('str' in item ? item.str : '')).join(' '));
+      }
+      return pages.join('\n\n');
+    } else if (name.endsWith('.doc') || name.endsWith('.docx')) {
+      const mammoth = await import('mammoth');
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value;
+    }
+    throw new Error('Unsupported file type. Use .txt, .pdf, or .docx');
+  };
+
+  const handleFileUpload = async (articleIdx: number, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    for (const file of Array.from(files)) {
+      try {
+        const text = await extractFileText(file);
+        if (!text.trim()) { setError(`Could not extract text from ${file.name}`); continue; }
+        setArticles(a => a.map((art, j) => j === articleIdx
+          ? { ...art, fileContents: [...art.fileContents, text.trim()], fileNames: [...art.fileNames, file.name] }
+          : art
+        ));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : `Failed to process ${file.name}`);
+      }
+    }
+  };
+
+  const removeFile = (articleIdx: number, fileIdx: number) => {
+    setArticles(a => a.map((art, j) => j === articleIdx
+      ? { ...art, fileContents: art.fileContents.filter((_, k) => k !== fileIdx), fileNames: art.fileNames.filter((_, k) => k !== fileIdx) }
+      : art
+    ));
+  };
+
   const handleGenerate = async () => {
     setError('');
     if (mode === 'editor') {
@@ -353,7 +401,24 @@ export default function CreateArticle4Page() {
                           </div>
                         ))}
                       </div>
-                      <button onClick={() => addSource(i)} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer' }}>+ Source</button>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button onClick={() => addSource(i)} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer' }}>+ Source</button>
+                        <label style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Upload size={10} /> Upload file
+                          <input type="file" accept=".pdf,.doc,.docx,.txt" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(i, e.target.files)} />
+                        </label>
+                      </div>
+                      {art.fileNames.length > 0 && (
+                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <label style={lbl}>Uploaded files</label>
+                          {art.fileNames.map((name, fi) => (
+                            <div key={fi} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: VS.accentGlow, borderRadius: '4px', fontSize: '11px', color: VS.text1, fontFamily: 'monospace' }}>
+                              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                              <button onClick={() => removeFile(i, fi)} style={{ width: '18px', height: '18px', borderRadius: '3px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', flexShrink: 0 }}>×</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {articles.length < 5 && (
