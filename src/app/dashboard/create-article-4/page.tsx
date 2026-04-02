@@ -290,7 +290,7 @@ export default function CreateArticle4Page() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) { setError(`Server returned HTTP ${res.status}`); return; }
+      if (!res.ok) { const d = await res.json().catch(() => null); setError(d?.error || `Server returned HTTP ${res.status}`); return; }
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
       if (!data.articles?.length) { setError('No articles returned.'); return; }

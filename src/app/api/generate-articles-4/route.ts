@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ articles: results });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[generate-articles-4] Error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
