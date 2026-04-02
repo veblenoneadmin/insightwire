@@ -33,7 +33,7 @@ function mdToHtml(text: string): string {
 
 // ── Types ─────────────────────────────────────────────────
 type SourceItem = { id: string; label: string; type: string; text: string };
-type SoftSuggestion = { url: string; title: string; source_type: string; rationale: string; status: 'pending' | 'promoted' | 'discarded'; additionalPrompt: string };
+type SoftSuggestion = { url: string; title: string; source_type: string; rationale: string; status: 'pending' | 'saved' | 'discarded'; additionalPrompt: string };
 
 type WorkflowStage = 'sources' | 'brief' | 'article';
 
@@ -174,7 +174,7 @@ export default function CreateArticle4Page() {
 
       // Collect additional prompts from promoted soft sources
       const additionalPrompts = softSuggestions
-        .filter(s => s.status === 'promoted' && s.additionalPrompt.trim())
+        .filter(s => s.status === 'saved' && s.additionalPrompt.trim())
         .map(s => `[${s.source_type}]: ${s.additionalPrompt.trim()}`);
 
       const res = await fetch('/api/generate-articles-4', {
@@ -193,7 +193,7 @@ export default function CreateArticle4Page() {
   };
 
   // ── Soft source feedback (Workflow Section 3, Rule 5) ───
-  const updateSuggestionStatus = (idx: number, status: 'promoted' | 'discarded') => {
+  const updateSuggestionStatus = (idx: number, status: 'saved' | 'discarded') => {
     setSoftSuggestions(prev => prev.map((s, i) => i === idx ? { ...s, status } : s));
   };
 
@@ -206,7 +206,7 @@ export default function CreateArticle4Page() {
         body: JSON.stringify({ url: sug.url, title: sug.title, source_type: sug.source_type, rationale: sug.rationale }),
       });
       if (!res.ok) { setError('Failed to save source'); return; }
-      updateSuggestionStatus(idx, 'promoted');
+      updateSuggestionStatus(idx, 'saved');
     } catch {
       setError('Failed to save source');
     }
@@ -374,10 +374,10 @@ export default function CreateArticle4Page() {
                   return (
                     <div key={i}
                       onClick={() => sug.status === 'pending' && setSelectedSuggestion(isSelected ? null : i)}
-                      style={{ padding: '10px 12px', background: sug.status === 'promoted' ? 'rgba(78,201,176,0.08)' : sug.status === 'discarded' ? 'rgba(244,71,71,0.05)' : isSelected ? 'rgba(86,156,214,0.08)' : VS.bg2, border: `1px solid ${sug.status === 'promoted' ? 'rgba(78,201,176,0.3)' : sug.status === 'discarded' ? 'rgba(244,71,71,0.2)' : isSelected ? 'rgba(86,156,214,0.4)' : VS.border}`, borderRadius: '6px', marginBottom: '8px', cursor: sug.status === 'pending' ? 'pointer' : 'default', transition: 'border-color 0.15s' }}>
+                      style={{ padding: '10px 12px', background: sug.status === 'saved' ? 'rgba(78,201,176,0.08)' : sug.status === 'discarded' ? 'rgba(244,71,71,0.05)' : isSelected ? 'rgba(86,156,214,0.08)' : VS.bg2, border: `1px solid ${sug.status === 'saved' ? 'rgba(78,201,176,0.3)' : sug.status === 'discarded' ? 'rgba(244,71,71,0.2)' : isSelected ? 'rgba(86,156,214,0.4)' : VS.border}`, borderRadius: '6px', marginBottom: '8px', cursor: sug.status === 'pending' ? 'pointer' : 'default', transition: 'border-color 0.15s' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                         <span style={{ fontFamily: 'monospace', fontSize: '9px', padding: '2px 6px', borderRadius: '3px', background: 'rgba(86,156,214,0.15)', color: VS.blue }}>{sug.source_type}</span>
-                        {sug.status === 'promoted' && <span style={{ fontFamily: 'monospace', fontSize: '9px', color: VS.success }}>PROMOTED</span>}
+                        {sug.status === 'saved' && <span style={{ fontFamily: 'monospace', fontSize: '9px', color: VS.success }}>SAVED</span>}
                         {sug.status === 'discarded' && <span style={{ fontFamily: 'monospace', fontSize: '9px', color: VS.error }}>DISCARDED</span>}
                       </div>
                       <div style={{ fontSize: '12px', color: VS.text0, fontWeight: 600, lineHeight: 1.4, marginBottom: '4px' }}>{sug.title}</div>
