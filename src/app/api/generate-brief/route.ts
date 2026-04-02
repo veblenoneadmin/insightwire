@@ -12,22 +12,10 @@ async function scrapeUrl(url: string): Promise<string> {
   return text.split(/\s+/).slice(0, 3500).join(' ');
 }
 
-// Workflow Section 2 (Hard Sources) + Section 4 (Brief Generation)
+// Workflow Section 2 (Hard Sources) + Section 4 (Brief Generation) — no additions, follow the MD strictly.
 const BRIEF_SYSTEM_PROMPT = `${WORKFLOW_SECTIONS.HARD_SOURCES}
 
-${WORKFLOW_SECTIONS.BRIEF_GENERATION}
-
-You are an editorial assistant for Business News Australia. Generate a brief from the hard sources provided.
-
-The brief must be 3–5 sentences and must surface:
-- The main news hook — what happened, who did it, and why it matters.
-- Key figures and dollar amounts — revenue, valuations, deal sizes, percentages, dates.
-- Who is quoted — named individuals and their roles, with a note on the tone or stance of their quotes.
-- Gaps or contradictions — anything missing from the sources that a complete article would normally require, and any conflicts between sources.
-
-Do not smooth over contradictions. State them plainly.
-Do not use any external knowledge. Use only the hard sources provided.
-Output the brief only — no article content.`;
+${WORKFLOW_SECTIONS.BRIEF_GENERATION}`;
 
 export async function POST(req: NextRequest) {
   try {
