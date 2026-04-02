@@ -1,4 +1,4 @@
-// Auto-generated from final_bna.md — do not edit manually.
+// Auto-generated from bna_style_guide.md — do not edit manually.
 // Bundled at build time to avoid runtime filesystem dependency.
 
 const BNA_STYLE_PROFILE = `# BNA Style Guide
@@ -84,10 +84,10 @@ Company name leads or appears within the first three words in the vast majority 
 
 ### Number Formatting in Headlines
 
-- Dollar figures abbreviated: **$49m**, **$1.2b** (lowercase m/b, no full stops)
+- Dollar figures abbreviated: **\$49m**, **\$1.2b** (lowercase m/b, no full stops)
 - Percentages abbreviated: **42pc** (not % or "per cent")
 - All numbers as numerals, never spelled out
-- Dollar amounts below $1 million written in full: **$375,000**
+- Dollar amounts below \$1 million written in full: **\$375,000**
 
 ---
 
@@ -113,13 +113,13 @@ Everything the reader needs to know is in the first sentence. No throat-clearing
 ### Strong Lede Examples
 
 **Capital raise:**
-> *"Melbourne-based respiratory imaging company 4DMedical (ASX: 4DX) has raised $150 million from institutional investors to accelerate commercialisation of its lung imaging technology."*
+> *"Melbourne-based respiratory imaging company 4DMedical (ASX: 4DX) has raised \$150 million from institutional investors to accelerate commercialisation of its lung imaging technology."*
 
 **Acquisition:**
-> *"Brisbane-based transport group Lindsay Australia (ASX: LAU) is acquiring SRT Logistics, Tasmania's largest provider of refrigerated transport solutions, for $108.2 million."*
+> *"Brisbane-based transport group Lindsay Australia (ASX: LAU) is acquiring SRT Logistics, Tasmania's largest provider of refrigerated transport solutions, for \$108.2 million."*
 
 **Regulatory/negative:**
-> *"Steel manufacturer BlueScope Steel (ASX: BSL) has been slapped with a $57.5 million penalty for attempting to fix prices for flat steel products, making it the biggest fine ever imposed nationally for cartel conduct."*
+> *"Steel manufacturer BlueScope Steel (ASX: BSL) has been slapped with a \$57.5 million penalty for attempting to fix prices for flat steel products, making it the biggest fine ever imposed nationally for cartel conduct."*
 
 **Share price movement:**
 > *"Shares in auto equipment retailer Bapcor (ASX: BAP) slumped more than 19 per cent this morning after the company downgraded its profit target."*
@@ -128,7 +128,7 @@ Everything the reader needs to know is in the first sentence. No throat-clearing
 > *"Administrators have been called in for Sydney-based proptech startup :Different after the company failed to secure enough funds to continue operating the business."*
 
 **Counter-intuitive angle:**
-> *"DroneShield (ASX: DRO) shares lost more than 20 per cent of their value today despite record first-half cash receipts of $21.4 million, as investors were turned off by a quarter-on-quarter decline in revenue."*
+> *"DroneShield (ASX: DRO) shares lost more than 20 per cent of their value today despite record first-half cash receipts of \$21.4 million, as investors were turned off by a quarter-on-quarter decline in revenue."*
 
 ---
 
@@ -171,7 +171,7 @@ Everything the reader needs to know is in the first sentence. No throat-clearing
 ### Key Structural Rules
 
 - **No summary conclusion paragraph.** Articles end on a forward-looking quote, a financial metric, a share price note, or a final contextual fact — never a restatement of the lede.
-- **Share price boilerplate** appears at or near the end of every ASX story: *"Shares in [Company] were trading X per cent [higher/lower] at $X.XX at [time] (AEST)."*
+- **Share price boilerplate** appears at or near the end of every ASX story: *"Shares in [Company] were trading X per cent [higher/lower] at \$X.XX at [time] (AEST)."*
 - **Internal hyperlinks** to prior BNA coverage are woven into sentences naturally, particularly using *"The news comes after..."* or *"It follows..."*
 - **No subheadings** in standard news articles. Subheadings appear only in long-form features or profiles.
 - **No bullet points** in editorial copy (occasionally used when reproducing lists of allegations or conditions from official documents).
@@ -319,16 +319,16 @@ BNA assumes a business-literate reader. Financial jargon (EBITDA, NPAT, ARR, WAL
 
 | Element | In Body Text | In Headlines |
 |---|---|---|
-| Millions | $49 million | $49m |
-| Billions | $1.2 billion | $1.2b |
+| Millions | \$49 million | \$49m |
+| Billions | \$1.2 billion | \$1.2b |
 | Percentages | 42 per cent | 42pc |
-| Share prices | $4.55 or 93.5c | Same |
-| USD conversion | US$33 million ($49 million) | US$33m ($49m) |
-| EUR conversion | €70 million ($108.6 million) | — |
-| NZD conversion | NZ$1.4 billion ($1.29 billion) | — |
+| Share prices | \$4.55 or 93.5c | Same |
+| USD conversion | US\$33 million (\$49 million) | US\$33m (\$49m) |
+| EUR conversion | €70 million (\$108.6 million) | — |
+| NZD conversion | NZ\$1.4 billion (\$1.29 billion) | — |
 
 **Rules:**
-- Always use "$" symbol, never spell out "dollars"
+- Always use "\$" symbol, never spell out "dollars"
 - "Per cent" is always two words in body text — never "%"
 - "pc" used only in headlines
 - Foreign currency amounts always converted to AUD in parentheses on first mention
@@ -410,9 +410,9 @@ BNA assumes a business-literate reader. Financial jargon (EBITDA, NPAT, ARR, WAL
 | **ASX ticker** | (ASX: XXX) in parentheses on first mention only |
 | **Percentages — body** | "per cent" (two words, spelled out) |
 | **Percentages — headlines** | "pc" (e.g., "42pc") |
-| **Money — body** | "$49 million", "$1.2 billion" (spelled out) |
-| **Money — headlines** | "$49m", "$1.2b" (abbreviated, lowercase) |
-| **USD conversion** | US$33 million ($49 million) — AUD in parentheses |
+| **Money — body** | "\$49 million", "\$1.2 billion" (spelled out) |
+| **Money — headlines** | "\$49m", "\$1.2b" (abbreviated, lowercase) |
+| **USD conversion** | US\$33 million (\$49 million) — AUD in parentheses |
 | **Lede formula** | City + company + (ASX) + has [verb] + dollar figure + context |
 | **First quote placement** | Paragraphs 3–7, after facts are established |
 | **Paragraph length** | 1–3 sentences maximum |
@@ -424,11 +424,13 @@ BNA assumes a business-literate reader. Financial jargon (EBITDA, NPAT, ARR, WAL
 | **Spelling** | Australian English throughout |
 | **Exclusive interviews** | *"tells Business News Australia"* |
 | **Non-response** | *"Business News Australia has sought comment from [company]"* |
-| **Share price boilerplate** | *"Shares in X were trading Y per cent higher/lower at $Z at [time] (AEST/AEDT)."* |
+| **Share price boilerplate** | *"Shares in X were trading Y per cent higher/lower at \$Z at [time] (AEST/AEDT)."* |
 
 ---
 
 ## 11. AI Article Generation Rules
+
+> **Cross-reference:** This section operates within the source handling rules defined in \`insightwire_workflow.md\`. All references to "sources" in this section refer to **hard sources** as defined in that document. Soft sources have no standing here — they do not exist in the article pipeline until the writer promotes them.
 
 This section governs how AI-assisted article generation must behave when producing BNA-style content. These rules are derived from editorial standards and direct feedback from BNA journalists. All generated articles must pass these checks before being presented to an editor for review.
 
@@ -468,6 +470,28 @@ This section governs how AI-assisted article generation must behave when produci
   - [ ] All quotes attributed to named individuals from the source
   - [ ] No summary conclusion paragraph
   - [ ] Headline does not start with "The"
-  - [ ] Announcement date confirmed as current (within 2–3 days)`;
+  - [ ] Announcement date confirmed as current (within 2–3 days)
+
+### Output Block Structure
+
+Each article generation call produces three distinct output blocks. The application must parse and render them separately.
+
+1. **Article body** — the full article as markdown, following all BNA style rules above.
+2. **References JSON** — a structured array mapping every key claim to its hard source, as defined in \`insightwire_workflow.md\` Section 6. This is returned as a fenced \`json:references\` code block after the article body.
+3. **Fact-check checklist** — the checklist above, returned as a fenced \`json:checklist\` code block with each item as a key-value pair (\`item\`: string, \`pass\`: boolean). The model evaluates each check against the generated article and the hard sources.
+
+\`\`\`json:checklist
+[
+  { "item": "Dollar figure matches source", "pass": true },
+  { "item": "ASX ticker included on first mention (if listed)", "pass": true },
+  { "item": "City-based descriptor on first mention", "pass": true },
+  { "item": "All quotes attributed to named individuals from the source", "pass": true },
+  { "item": "No summary conclusion paragraph", "pass": true },
+  { "item": "Headline does not start with The", "pass": true },
+  { "item": "Announcement date confirmed as current (within 2-3 days)", "pass": false }
+]
+\`\`\`
+
+The Editor Q&A section is appended after the checklist as plain text. It is not structured as JSON — it is conversational and intended for human interaction.`;
 
 export default BNA_STYLE_PROFILE;
