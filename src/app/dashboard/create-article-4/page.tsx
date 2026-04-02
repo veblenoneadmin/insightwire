@@ -33,7 +33,7 @@ function mdToHtml(text: string): string {
 
 // ── Types ─────────────────────────────────────────────────
 type SourceItem = { id: string; label: string; type: string; text: string };
-type SoftSuggestion = { source_type: string; description: string; search_query: string; status: 'pending' | 'promoted' | 'discarded'; additionalPrompt: string };
+type SoftSuggestion = { source_type: string; description: string; search_query: string; url: string; status: 'pending' | 'promoted' | 'discarded'; additionalPrompt: string };
 
 type WorkflowStage = 'sources' | 'brief' | 'article';
 
@@ -149,7 +149,7 @@ export default function CreateArticle4Page() {
       });
       if (sugRes.ok) {
         const sugData = await sugRes.json();
-        setSoftSuggestions((sugData.suggestions || []).map((s: Omit<SoftSuggestion, 'status' | 'additionalPrompt'>) => ({ ...s, status: 'pending' as const, additionalPrompt: '' })));
+        setSoftSuggestions((sugData.suggestions || []).map((s: Omit<SoftSuggestion, 'status' | 'additionalPrompt'>) => ({ ...s, url: s.url || `https://www.google.com/search?q=${encodeURIComponent(s.search_query)}`, status: 'pending' as const, additionalPrompt: '' })));
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Brief generation failed');
@@ -382,7 +382,7 @@ export default function CreateArticle4Page() {
                       {sug.status === 'pending' && (
                         <div style={{ display: 'flex', gap: '4px' }} onClick={e => e.stopPropagation()}>
                           <button onClick={() => updateSuggestionStatus(i, 'promoted')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: VS.success, borderColor: 'rgba(78,201,176,0.3)' }}><ThumbsUp size={10} /> Promote</button>
-                          <button onClick={() => window.open(`https://www.google.com/search?q=${encodeURIComponent(sug.search_query)}`, '_blank')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px' }}><Eye size={10} /> View</button>
+                          <button onClick={() => window.open(sug.url, '_blank')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px' }}><Eye size={10} /> View</button>
                           <button onClick={() => updateSuggestionStatus(i, 'discarded')} style={{ ...pillBtn(false), display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', color: VS.error, borderColor: 'rgba(244,71,71,0.3)' }}><ThumbsDown size={10} /> Discard</button>
                         </div>
                       )}
