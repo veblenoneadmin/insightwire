@@ -228,28 +228,13 @@ export default function CreateArticlePage() {
       const name = file.name.toLowerCase();
       let text = '';
 
-      if (name.endsWith('.txt')) {
-        text = await file.text();
-
-      } else if (name.endsWith('.pdf')) {
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString();
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const pages: string[] = [];
-        for (let p = 1; p <= pdf.numPages; p++) {
-          const page = await pdf.getPage(p);
-          const content = await page.getTextContent();
-          pages.push(content.items.map((i) => ('str' in i ? i.str : '')).join(' '));
-        }
-        text = pages.join('\n\n');
-
-      } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
-        const mammoth = await import('mammoth');
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
-        text = result.value;
-
+      if (name.endsWith('.txt') || name.endsWith('.pdf') || name.endsWith('.doc') || name.endsWith('.docx')) {
+        const form = new FormData();
+        form.append('file', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: form });
+        if (!res.ok) throw new Error(`Failed to extract text from ${file.name}`);
+        const data = await res.json();
+        text = data.text;
       } else {
         setError('Unsupported file type. Use .txt, .pdf, or .docx');
         return;
