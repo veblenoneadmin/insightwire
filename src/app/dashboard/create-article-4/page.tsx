@@ -174,10 +174,15 @@ export default function CreateArticle4Page() {
         id: s.id, label: s.label, text: s.text || s.label, type: s.type,
       }));
 
+      // Collect additional prompts from promoted soft sources
+      const additionalPrompts = softSuggestions
+        .filter(s => s.status === 'promoted' && s.additionalPrompt.trim())
+        .map(s => `[${s.source_type}]: ${s.additionalPrompt.trim()}`);
+
       const res = await fetch('/api/generate-articles-4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, sourceTexts, topic }),
+        body: JSON.stringify({ brief, sourceTexts, topic, additionalPrompts }),
       });
       if (!res.ok) { const d = await res.json().catch(() => null); setError(d?.error || `Article generation failed: HTTP ${res.status}`); return; }
       const data = await res.json();
