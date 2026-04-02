@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { Plus, ChevronRight, Copy, Download, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Loader2, Upload } from 'lucide-react';
+import { Plus, ChevronRight, Copy, Download, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Loader2, Upload, CheckCircle2, XCircle, FileText, ClipboardList, MessageSquare, BookOpen } from 'lucide-react';
 
 // ── VS Dark palette ───────────────────────────────────────
 const VS = {
   bg0: '#1e1e1e', bg1: '#252526', bg2: '#2d2d2d', bg3: '#333333',
   border: '#3c3c3c', text0: '#f0f0f0', text1: '#c0c0c0', text2: '#909090',
   accent: '#FF8000', accentGlow: 'rgba(255,128,0,0.10)', accentDim: '#CC6600',
-  error: '#f44747',
+  error: '#f44747', success: '#4ec9b0',
 };
 
 // ── Markdown → HTML ───────────────────────────────────────
@@ -34,17 +34,27 @@ function mdToHtml(text: string): string {
 
 const LOADING_MSGS = [
   ['Connecting to engine…', 'Calling Anthropic directly'],
-  ['Fetching source URLs…', 'Scraping via Jina AI reader'],
-  ['Preparing prompt…', 'Applying final_bna.md style guide'],
-  ['AI is writing…', 'Generating original BNA-style content'],
-  ['Refining structure…', 'Polishing lede and flow'],
-  ['Quality check…', 'Verifying BNA style compliance'],
-  ['Finalizing output…', 'Packaging articles'],
-  ['Almost there…', 'Applying final formatting'],
+  ['Fetching hard sources…', 'Scraping URLs via Jina AI reader'],
+  ['Generating brief…', 'Extracting news hook, key figures & quotes'],
+  ['Brief confirmed…', 'Proceeding to article generation'],
+  ['AI is writing…', 'Applying BNA style guide to hard sources only'],
+  ['Building references…', 'Mapping claims to hard sources'],
+  ['Fact-checking…', 'Running checklist against generated article'],
+  ['Almost there…', 'Packaging article + references + checklist'],
 ];
 
-type ArticleInput  = { topic: string; sources: string[]; fileContents: string[]; fileNames: string[] };
-type ArticleResult = { index: number; topic: string; articleText: string };
+type ArticleInput = { topic: string; sources: string[]; fileContents: string[]; fileNames: string[] };
+type ReferenceItem = { index: number; claim: string; source_title: string; source_type: string; origin: string; source_id: string; url: string | null };
+type ChecklistItem = { item: string; pass: boolean };
+type ArticleResult = {
+  index: number;
+  topic: string;
+  articleText: string;
+  brief?: string;
+  references?: ReferenceItem[] | null;
+  checklist?: ChecklistItem[] | null;
+  editorQA?: string;
+};
 
 // ── BNA Preview ───────────────────────────────────────────
 function BnaPreview({ article, imgSrc, onImgChange }: {
@@ -178,6 +188,82 @@ function BnaPreview({ article, imgSrc, onImgChange }: {
   );
 }
 
+// ── References Panel ──────────────────────────────────────
+function ReferencesPanel({ references }: { references: ReferenceItem[] }) {
+  return (
+    <div style={{ padding: '28px', maxWidth: '800px', margin: '0 auto' }}>
+      <h2 style={{ fontFamily: 'sans-serif', fontSize: '18px', color: '#333', marginBottom: '16px', fontWeight: 700 }}>References</h2>
+      <p style={{ fontSize: '13px', color: '#888', marginBottom: '20px' }}>Every claim mapped to its hard source. Per insightwire_workflow.md Section 6.</p>
+      {references.map((ref, i) => (
+        <div key={i} style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+            <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#999', flexShrink: 0, marginTop: '2px' }}>{ref.index}.</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '14px', color: '#333', fontStyle: 'italic', marginBottom: '6px', lineHeight: 1.5 }}>"{ref.claim}"</div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '11px' }}>
+                <span style={{ padding: '2px 8px', background: '#f0f0f0', borderRadius: '3px', color: '#666' }}>{ref.source_title}</span>
+                <span style={{ padding: '2px 8px', background: '#e8f4fd', borderRadius: '3px', color: '#0077b6' }}>{ref.source_type}</span>
+                <span style={{ padding: '2px 8px', background: '#fff3e0', borderRadius: '3px', color: '#e65100' }}>{ref.origin}</span>
+              </div>
+              {ref.url && (
+                <a href={ref.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11px', color: '#00AEEF', marginTop: '6px', display: 'inline-block' }}>{ref.url}</a>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Checklist Panel ───────────────────────────────────────
+function ChecklistPanel({ checklist }: { checklist: ChecklistItem[] }) {
+  const passCount = checklist.filter(c => c.pass).length;
+  return (
+    <div style={{ padding: '28px', maxWidth: '600px', margin: '0 auto' }}>
+      <h2 style={{ fontFamily: 'sans-serif', fontSize: '18px', color: '#333', marginBottom: '4px', fontWeight: 700 }}>Fact-Check Checklist</h2>
+      <p style={{ fontSize: '13px', color: '#888', marginBottom: '20px' }}>{passCount}/{checklist.length} checks passed. Per bna_style_guide.md Section 11.</p>
+      {checklist.map((item, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: item.pass ? 'rgba(78,201,176,0.06)' : 'rgba(244,71,71,0.06)', border: `1px solid ${item.pass ? 'rgba(78,201,176,0.2)' : 'rgba(244,71,71,0.2)'}`, borderRadius: '6px', marginBottom: '6px' }}>
+          {item.pass
+            ? <CheckCircle2 size={16} style={{ color: VS.success, flexShrink: 0 }} />
+            : <XCircle size={16} style={{ color: VS.error, flexShrink: 0 }} />
+          }
+          <span style={{ fontSize: '13px', color: item.pass ? '#333' : VS.error }}>{item.item}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Brief Panel ───────────────────────────────────────────
+function BriefPanel({ brief }: { brief: string }) {
+  return (
+    <div style={{ padding: '28px', maxWidth: '700px', margin: '0 auto' }}>
+      <h2 style={{ fontFamily: 'sans-serif', fontSize: '18px', color: '#333', marginBottom: '4px', fontWeight: 700 }}>Editorial Brief</h2>
+      <p style={{ fontSize: '13px', color: '#888', marginBottom: '20px' }}>Generated from hard sources only. Per insightwire_workflow.md Section 4.</p>
+      <div style={{ padding: '20px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '15px', color: '#444', lineHeight: 1.75 }}>
+        {brief}
+      </div>
+    </div>
+  );
+}
+
+// ── Editor Q&A Panel ──────────────────────────────────────
+function EditorQAPanel({ editorQA }: { editorQA: string }) {
+  return (
+    <div style={{ padding: '28px', maxWidth: '700px', margin: '0 auto' }}>
+      <h2 style={{ fontFamily: 'sans-serif', fontSize: '18px', color: '#333', marginBottom: '4px', fontWeight: 700 }}>Editor Q&A</h2>
+      <p style={{ fontSize: '13px', color: '#888', marginBottom: '20px' }}>Suggested follow-up questions. Per bna_style_guide.md Section 11.</p>
+      <div style={{ padding: '20px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '14px', color: '#444', lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+        {editorQA}
+      </div>
+    </div>
+  );
+}
+
+type OutputTab = 'preview' | 'raw' | 'brief' | 'references' | 'checklist' | 'qa';
+
 // ── Main Page ─────────────────────────────────────────────
 export default function CreateArticle4Page() {
   const [mode, setMode]             = useState<'editor' | 'categorical'>('editor');
@@ -197,7 +283,7 @@ export default function CreateArticle4Page() {
   const [results, setResults]       = useState<ArticleResult[]>([]);
   const [imgSrcs, setImgSrcs]       = useState<Record<number, string>>({});
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [viewMode, setViewMode]     = useState<'preview' | 'raw'>('preview');
+  const [viewMode, setViewMode]     = useState<OutputTab>('preview');
   const [error, setError]           = useState('');
   const [formCollapsed, setFormCollapsed] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -319,6 +405,7 @@ export default function CreateArticle4Page() {
       setResults(data.articles);
       setCurrentIdx(data.articles[0].index ?? 0);
       setImgSrcs({});
+      setViewMode('preview');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Request failed');
     } finally {
@@ -343,6 +430,16 @@ export default function CreateArticle4Page() {
 
   const inp: React.CSSProperties = { background: VS.bg2, border: `1px solid ${VS.border}`, borderRadius: '6px', padding: '8px 11px', color: VS.text0, fontFamily: 'inherit', fontSize: '13px', width: '100%', outline: 'none', boxSizing: 'border-box' };
   const lbl: React.CSSProperties = { display: 'block', fontSize: '9px', fontFamily: 'monospace', color: VS.text2, textTransform: 'uppercase', letterSpacing: '1.2px', marginBottom: '4px' };
+
+  // Tab config for output panel
+  const outputTabs: { key: OutputTab; label: string; icon: React.ReactNode; show: boolean }[] = [
+    { key: 'preview', label: 'Preview', icon: <FileText size={11} />, show: true },
+    { key: 'raw', label: 'Raw', icon: <FileText size={11} />, show: true },
+    { key: 'brief', label: 'Brief', icon: <BookOpen size={11} />, show: !!currentArticle?.brief },
+    { key: 'references', label: 'Refs', icon: <ClipboardList size={11} />, show: !!currentArticle?.references?.length },
+    { key: 'checklist', label: 'Check', icon: <CheckCircle2 size={11} />, show: !!currentArticle?.checklist?.length },
+    { key: 'qa', label: 'Q&A', icon: <MessageSquare size={11} />, show: !!currentArticle?.editorQA },
+  ];
 
   return (
     <>
@@ -372,7 +469,7 @@ export default function CreateArticle4Page() {
               <div style={{ display: 'flex', border: `1px solid ${VS.border}`, borderRadius: '7px', overflow: 'hidden', marginBottom: '14px' }}>
                 {(['editor', 'categorical'] as const).map((m) => (
                   <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: '8px 10px', background: mode === m ? VS.accentGlow : 'transparent', border: 'none', color: mode === m ? VS.accent : VS.text2, fontFamily: 'monospace', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.6px', cursor: 'pointer', fontWeight: mode === m ? 600 : 400 }}>
-                    {m === 'editor' ? 'Source URLs' : 'By Topic'}
+                    {m === 'editor' ? 'Hard Sources' : 'By Topic'}
                   </button>
                 ))}
               </div>
@@ -391,7 +488,7 @@ export default function CreateArticle4Page() {
                         <label style={lbl}>Angle (optional)</label>
                         <input style={inp} value={art.topic} onChange={e => updateTopic(i, e.target.value)} placeholder="e.g. Lead with funding implications for QLD tech" />
                       </div>
-                      <label style={lbl}>Sources</label>
+                      <label style={lbl}>Hard Sources</label>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '7px' }}>
                         {art.sources.map((src, si) => (
                           <div key={si} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -555,7 +652,7 @@ export default function CreateArticle4Page() {
           )}
         </div>
 
-        {/* ── Right: Preview panel ─────────────────────── */}
+        {/* ── Right: Output panel ──────────────────────── */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: results.length ? '#f0efe8' : VS.bg0, minWidth: 0, position: fullscreen ? 'fixed' : 'relative', inset: fullscreen ? 0 : undefined, zIndex: fullscreen ? 500 : undefined }}>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: results.length ? '#fff' : VS.bg1, borderBottom: `1px solid ${results.length ? '#ddd' : VS.border}`, flexShrink: 0, gap: '10px' }}>
@@ -568,7 +665,7 @@ export default function CreateArticle4Page() {
               {results.length > 0 && (
                 <div style={{ display: 'flex', gap: '4px', overflow: 'auto', flexWrap: 'nowrap' }}>
                   {results.map((art, idx) => (
-                    <button key={art.index ?? idx} onClick={() => setCurrentIdx(art.index ?? idx)}
+                    <button key={art.index ?? idx} onClick={() => { setCurrentIdx(art.index ?? idx); setViewMode('preview'); }}
                       style={{ fontFamily: 'monospace', fontSize: '10px', padding: '5px 12px', borderRadius: '5px', border: (art.index ?? idx) === currentIdx ? '1px solid #FF8000' : '1px solid #ddd', background: (art.index ?? idx) === currentIdx ? '#FF8000' : '#f5f5f0', color: (art.index ?? idx) === currentIdx ? '#fff' : '#666', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontWeight: (art.index ?? idx) === currentIdx ? 600 : 400 }}>
                       {art.topic || `Article ${idx + 1}`}
                     </button>
@@ -579,11 +676,11 @@ export default function CreateArticle4Page() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
               {results.length > 0 && (
                 <>
-                  <div style={{ display: 'flex', gap: '3px' }}>
-                    {(['preview', 'raw'] as const).map(v => (
-                      <button key={v} onClick={() => setViewMode(v)}
-                        style={{ fontFamily: 'monospace', fontSize: '10px', padding: '5px 12px', borderRadius: '5px', border: '1px solid #ddd', background: viewMode === v ? '#000' : '#f5f5f0', color: viewMode === v ? '#fff' : '#666', cursor: 'pointer' }}>
-                        {v.charAt(0).toUpperCase() + v.slice(1)}
+                  <div style={{ display: 'flex', gap: '2px' }}>
+                    {outputTabs.filter(t => t.show).map(t => (
+                      <button key={t.key} onClick={() => setViewMode(t.key)}
+                        style={{ fontFamily: 'monospace', fontSize: '10px', padding: '5px 10px', borderRadius: '5px', border: '1px solid #ddd', background: viewMode === t.key ? '#000' : '#f5f5f0', color: viewMode === t.key ? '#fff' : '#666', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        {t.icon} {t.label}
                       </button>
                     ))}
                   </div>
@@ -611,12 +708,20 @@ export default function CreateArticle4Page() {
                   <line x1="14" y1="28" x2="26" y2="28"/>
                 </svg>
                 <h3 style={{ fontFamily: 'inherit', fontSize: '18px', color: VS.text1, fontWeight: 400, margin: 0 }}>No articles yet</h3>
-                <p style={{ fontSize: '13px', maxWidth: '280px', lineHeight: 1.6, margin: 0 }}>Paste source URLs and click Generate — articles are written directly by Claude following final_bna.md exactly.</p>
+                <p style={{ fontSize: '13px', maxWidth: '320px', lineHeight: 1.6, margin: 0 }}>Load hard sources (URLs or files) and click Generate. The AI will produce a brief first, then generate the article following BNA style guide and workflow rules.</p>
               </div>
             ) : viewMode === 'raw' ? (
               <pre style={{ padding: '28px', fontFamily: 'monospace', fontSize: '12px', color: '#333', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word', background: '#fff', minHeight: '100%', margin: 0 }}>
                 {currentArticle?.articleText ?? ''}
               </pre>
+            ) : viewMode === 'brief' && currentArticle?.brief ? (
+              <BriefPanel brief={currentArticle.brief} />
+            ) : viewMode === 'references' && currentArticle?.references?.length ? (
+              <ReferencesPanel references={currentArticle.references} />
+            ) : viewMode === 'checklist' && currentArticle?.checklist?.length ? (
+              <ChecklistPanel checklist={currentArticle.checklist} />
+            ) : viewMode === 'qa' && currentArticle?.editorQA ? (
+              <EditorQAPanel editorQA={currentArticle.editorQA} />
             ) : currentArticle ? (
               <BnaPreview
                 key={currentArticle.index ?? 0}
