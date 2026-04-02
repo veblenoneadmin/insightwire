@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, Copy, Download, Maximize2, Minimize2, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, Eye, ArrowRight } from 'lucide-react';
+import { Upload, Copy, Download, Maximize2, Minimize2, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, Eye, ArrowRight, Pencil, Eye as EyeIcon } from 'lucide-react';
 
 // ── Palette ───────────────────────────────────────────────
 const VS = {
@@ -65,6 +65,7 @@ export default function CreateArticle4Page() {
   const [articleText, setArticleText]       = useState('');
   const [articleLoading, setArticleLoading] = useState(false);
   const [fullscreen, setFullscreen]         = useState(false);
+  const [editMode, setEditMode]             = useState(false);
 
   // ── File extraction (client-side) ───────────────────────
   const extractFileText = async (file: File): Promise<string> => {
@@ -419,6 +420,7 @@ export default function CreateArticle4Page() {
           <div style={{ display: 'flex', gap: '4px' }}>
             {hasArticle && (
               <>
+                <button onClick={() => setEditMode(v => !v)} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', borderRadius: '5px', border: editMode ? '1px solid #FF8000' : '1px solid #ddd', background: editMode ? 'rgba(255,128,0,0.08)' : '#fff', color: editMode ? '#FF8000' : '#666', cursor: 'pointer', fontSize: '10px', fontFamily: 'monospace' }}>{editMode ? <><EyeIcon size={11} /> Preview</> : <><Pencil size={11} /> Edit</>}</button>
                 <button onClick={copyArticle} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', borderRadius: '5px', border: '1px solid #ddd', background: '#fff', color: '#666', cursor: 'pointer', fontSize: '10px', fontFamily: 'monospace' }}><Copy size={11} /> Copy</button>
                 <button onClick={downloadArticle} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 10px', borderRadius: '5px', border: '1px solid #ddd', background: '#fff', color: '#666', cursor: 'pointer', fontSize: '10px', fontFamily: 'monospace' }}><Download size={11} /> .txt</button>
               </>
@@ -456,7 +458,15 @@ export default function CreateArticle4Page() {
             </div>
           )}
 
-          {hasArticle && articleHtml && (
+          {hasArticle && editMode && (
+            <textarea
+              value={articleText}
+              onChange={e => setArticleText(e.target.value)}
+              style={{ width: '100%', height: '100%', padding: '28px', fontFamily: 'monospace', fontSize: '13px', color: '#333', lineHeight: 1.8, background: '#fff', border: 'none', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
+            />
+          )}
+
+          {hasArticle && !editMode && articleHtml && (
             <div>
               {/* BNA Preview */}
               <div style={{ background: '#f0efe8' }}>
