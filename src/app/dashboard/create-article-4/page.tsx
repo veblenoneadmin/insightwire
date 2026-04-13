@@ -930,6 +930,14 @@ export default function CreateArticle4Page() {
                       return [...kept, ...quotes.map((q, i) => ({ source: srcName, quote: q, placement: placements[i] || 'Additional quote' }))];
                     });
                     setStagedContent({ source: srcName, content: srcContent });
+                    // Also add the full announcement content as a pasted-text hard source so the
+                    // non-quoted content informs brief and article generation.
+                    setPastedTexts(prev => {
+                      const tag = `[FROM ANNOUNCEMENT: ${srcName}]\n`;
+                      // Remove any previous version of this announcement's content
+                      const kept = prev.filter(t => !t.startsWith(tag));
+                      return [...kept, `${tag}${srcContent}`];
+                    });
                     setViewingAnn(null);
                     setCtxMenu(null);
                   }}
