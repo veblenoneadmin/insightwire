@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Upload, Copy, Download, Maximize2, Minimize2, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, Eye, ArrowRight, Pencil, Eye as EyeIcon, X } from 'lucide-react';
+import { Plus, Upload, Copy, Download, Maximize2, Minimize2, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, Eye, ArrowRight, Pencil, Eye as EyeIcon, X, ChevronRight } from 'lucide-react';
 
 // ── Palette ───────────────────────────────────────────────
 const VS = {
@@ -67,6 +67,13 @@ export default function CreateArticle4Page() {
   const [fullscreen, setFullscreen]         = useState(false);
   const [editMode, setEditMode]             = useState(false);
   const [viewingAnn, setViewingAnn]         = useState<number | null>(null);
+
+  // ── Advanced Options state ──────────────────────────────
+  const [optOpen, setOptOpen]               = useState(false);
+  const [tone, setTone]                     = useState('Authoritative');
+  const [mood, setMood]                     = useState('News Report');
+  const [wordCount, setWordCount]           = useState('');
+  const [region, setRegion]                 = useState('');
 
   // ── Add Source Modal state ───────────────────────────────
   const [addModalOpen, setAddModalOpen]         = useState(false);
@@ -240,7 +247,7 @@ export default function CreateArticle4Page() {
       const res = await fetch('/api/generate-articles-4', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, sourceTexts, topic, additionalPrompts }),
+        body: JSON.stringify({ brief, sourceTexts, topic, additionalPrompts, tone, mood, wordCount: wordCount ? parseInt(wordCount) : undefined, region }),
       });
       if (!res.ok) { const d = await res.json().catch(() => null); setError(d?.error || `Article generation failed: HTTP ${res.status}`); return; }
       const data = await res.json();
@@ -355,6 +362,46 @@ export default function CreateArticle4Page() {
               </div>
             </div>
           )}
+
+          <div style={{ border: `1px solid ${VS.border}`, borderRadius: '7px', overflow: 'hidden', marginBottom: '12px' }}>
+            <button onClick={() => setOptOpen(v => !v)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '9px 12px', background: VS.bg1, border: 'none', color: optOpen ? VS.accent : VS.text2, cursor: 'pointer', fontFamily: 'monospace', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <ChevronRight size={11} style={{ transform: optOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+                Advanced Options
+              </span>
+              <span style={{ fontSize: '9px', color: VS.text2, fontWeight: 400 }}>BNA style by default</span>
+            </button>
+            {optOpen && (
+              <div style={{ padding: '12px', borderTop: `1px solid ${VS.border}`, background: VS.bg2, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div>
+                  <label style={lbl}>Tone</label>
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    {['Authoritative', 'Conversational', 'Analytical', 'Punchy'].map(t => (
+                      <button key={t} onClick={() => setTone(t)} style={{ padding: '4px 10px', borderRadius: '5px', border: `1px solid ${tone === t ? VS.accent : VS.border}`, background: tone === t ? VS.accentGlow : 'transparent', color: tone === t ? VS.accent : VS.text2, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: tone === t ? 600 : 400 }}>{t}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={lbl}>Format</label>
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    {['News Report', 'Opinion/Analysis', 'Explainer', 'Trend Piece'].map(m => (
+                      <button key={m} onClick={() => setMood(m)} style={{ padding: '4px 10px', borderRadius: '5px', border: `1px solid ${mood === m ? VS.accent : VS.border}`, background: mood === m ? VS.accentGlow : 'transparent', color: mood === m ? VS.accent : VS.text2, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: mood === m ? 600 : 400 }}>{m}</button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={lbl}>Word count</label>
+                    <input style={inp} type="number" value={wordCount} onChange={e => setWordCount(e.target.value)} min={200} max={2000} step={50} placeholder="~600" />
+                  </div>
+                  <div>
+                    <label style={lbl}>Region</label>
+                    <input style={inp} type="text" value={region} onChange={e => setRegion(e.target.value)} placeholder="e.g. Queensland" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           <button onClick={handleGenerateBrief} disabled={briefLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '11px', background: `linear-gradient(135deg, ${VS.accent}, ${VS.accentDim})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 3px 14px rgba(255,128,0,0.2)', opacity: briefLoading ? 0.5 : 1 }}>
             {briefLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating Brief…</> : <><ArrowRight size={14} /> Generate Brief</>}

@@ -30,8 +30,20 @@ export async function POST(req: NextRequest) {
     const sourceTexts: { id: string; label: string; text: string; type: string }[] = body.sourceTexts || [];
     const topic: string = body.topic || '';
     const additionalPrompts: string[] = body.additionalPrompts || [];
+    const tone: string = body.tone || '';
+    const mood: string = body.mood || '';
+    const wordCount: number | undefined = body.wordCount;
+    const region: string = body.region || '';
 
     const topicBlock = topic ? `ANGLE/FOCUS: ${topic}\n\n` : '';
+
+    // Advanced options overrides
+    const optionBlocks: string[] = [];
+    if (tone) optionBlocks.push(`TONE: ${tone}`);
+    if (mood) optionBlocks.push(`FORMAT: ${mood}`);
+    if (wordCount) optionBlocks.push(`TARGET WORD COUNT: approximately ${wordCount} words`);
+    if (region) optionBlocks.push(`REGIONAL FOCUS: ${region}`);
+    const optionsBlock = optionBlocks.length > 0 ? `\n\n${optionBlocks.join('\n')}` : '';
 
     // Hard sources as user message content per workflow Section 7
     const sourceContent = sourceTexts.map(s => ({
@@ -51,7 +63,7 @@ export async function POST(req: NextRequest) {
       messages: [{
         role: 'user',
         content: [
-          { type: 'text', text: `${topicBlock}CONFIRMED BRIEF:\n${brief}${additionalBlock}\n\nHere are the hard sources:` },
+          { type: 'text', text: `${topicBlock}CONFIRMED BRIEF:\n${brief}${optionsBlock}${additionalBlock}\n\nHere are the hard sources:` },
           ...sourceContent,
           { type: 'text', text: 'Using the confirmed brief and the hard sources above, write a complete BNA-style article. Follow the style guide exactly. Output only the article.' },
         ],
