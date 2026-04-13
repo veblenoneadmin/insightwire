@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     const mood: string = body.mood || '';
     const wordCount: number | undefined = body.wordCount;
     const region: string = body.region || '';
-    const announcementQuotes: { source: string; quote: string }[] = body.announcementQuotes || [];
+    const announcementQuotes: { source: string; quote: string; placement?: string }[] = body.announcementQuotes || [];
 
     const topicBlock = topic ? `ANGLE/FOCUS: ${topic}\n\n` : '';
 
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     // Quotes selected by writer from announcements — must be used verbatim in the article
     const quotesBlock = announcementQuotes.length > 0
-      ? `\n\nREQUIRED QUOTES (selected by writer from announcements — include these verbatim as direct quotes in the article, with appropriate attribution):\n${announcementQuotes.map((q, i) => `${i + 1}. From "${q.source}": "${q.quote}"`).join('\n')}`
+      ? `\n\nREQUIRED QUOTES (selected by writer from announcements — include these verbatim as direct quotes in the article, with appropriate attribution. Follow the writer's placement instruction for each):\n${announcementQuotes.map((q, i) => `${i + 1}. From "${q.source}"${q.placement ? ` — placement: ${q.placement}` : ''}:\n   "${q.quote}"`).join('\n\n')}`
       : '';
 
     const articleMessage = await client.messages.create({

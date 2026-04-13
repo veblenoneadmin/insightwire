@@ -70,6 +70,10 @@ export default function CreateArticle4Page() {
   const [annQuotes, setAnnQuotes]           = useState<Record<number, string[]>>({});
   const [selectedText, setSelectedText]     = useState('');
 
+  // ── Staged Quotes (shown in output panel for editing) ───
+  type StagedQuote = { source: string; quote: string; placement: string };
+  const [stagedQuotes, setStagedQuotes]     = useState<StagedQuote[]>([]);
+
   // ── Advanced Options state ──────────────────────────────
   const [optOpen, setOptOpen]               = useState(false);
   const [tone, setTone]                     = useState('Authoritative');
@@ -246,10 +250,10 @@ export default function CreateArticle4Page() {
         .filter(s => s.status === 'saved' && s.additionalPrompt.trim())
         .map(s => `[${s.source_type}]: ${s.additionalPrompt.trim()}`);
 
-      // Collect saved quotes from announcements
-      const announcementQuotes = Object.entries(annQuotes).flatMap(([idx, quotes]) =>
-        quotes.map(q => ({ source: announcementNames[Number(idx)] || `Announcement ${Number(idx) + 1}`, quote: q }))
-      );
+      // Use staged quotes (confirmed from announcement view) with their placements
+      const announcementQuotes = stagedQuotes.map(sq => ({
+        source: sq.source, quote: sq.quote, placement: sq.placement,
+      }));
 
       const res = await fetch('/api/generate-articles-4', {
         method: 'POST',
@@ -561,7 +565,7 @@ export default function CreateArticle4Page() {
             </div>
           )}
 
-          {!hasArticle && !articleLoading && (
+          {!hasArticle && !articleLoading && stagedQuotes.length === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '60px 40px', textAlign: 'center', color: VS.text2, gap: '14px' }}>
               <svg width="44" height="44" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" opacity={0.25}>
                 <rect x="8" y="6" width="32" height="36" rx="3"/>
@@ -575,6 +579,49 @@ export default function CreateArticle4Page() {
                 2. Review the brief in the middle panel<br/>
                 3. Confirm the brief to generate the article
               </p>
+            </div>
+          )}
+
+          {!hasArticle && !articleLoading && stagedQuotes.length > 0 && (
+            <div style={{ padding: '28px', maxWidth: '800px', margin: '0 auto' }}>
+              <h2 style={{ fontFamily: 'sans-serif', fontSize: '18px', color: '#333', marginBottom: '4px', fontWeight: 700 }}>Staged Quotes</h2>
+              <p style={{ fontSize: '13px', color: '#888', marginBottom: '20px' }}>Quotes from your announcements that will be included in the article. Edit the quote text and placement below. Confirm the brief in the middle panel to generate the article.</p>
+
+              {stagedQuotes.map((sq, i) => (
+                <div key={i} style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: '10px', padding: '2px 8px', borderRadius: '3px', background: 'rgba(206,147,216,0.2)', color: '#a055b8', fontWeight: 600 }}>QUOTE {i + 1}</span>
+                    <button
+                      onClick={() => setStagedQuotes(prev => prev.filter((_, j) => j !== i))}
+                      style={{ fontFamily: 'monospace', fontSize: '10px', padding: '3px 8px', borderRadius: '4px', border: '1px solid #f44747', background: 'rgba(244,71,71,0.05)', color: '#f44747', cursor: 'pointer' }}
+                    >Remove</button>
+                  </div>
+
+                  <label style={{ display: 'block', fontSize: '10px', fontFamily: 'monospace', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Source</label>
+                  <div style={{ fontSize: '12px', color: '#666', fontFamily: 'monospace', marginBottom: '10px', padding: '6px 10px', background: '#f5f5f5', borderRadius: '4px' }}>{sq.source}</div>
+
+                  <label style={{ display: 'block', fontSize: '10px', fontFamily: 'monospace', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Quote (editable)</label>
+                  <textarea
+                    value={sq.quote}
+                    onChange={e => setStagedQuotes(prev => prev.map((q, j) => j === i ? { ...q, quote: e.target.value } : q))}
+                    rows={3}
+                    style={{ width: '100%', padding: '8px 11px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '13px', color: '#333', lineHeight: 1.5, fontFamily: 'sans-serif', fontStyle: 'italic', resize: 'vertical', outline: 'none', marginBottom: '10px', boxSizing: 'border-box' }}
+                  />
+
+                  <label style={{ display: 'block', fontSize: '10px', fontFamily: 'monospace', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Placement</label>
+                  <select
+                    value={sq.placement}
+                    onChange={e => setStagedQuotes(prev => prev.map((q, j) => j === i ? { ...q, placement: e.target.value } : q))}
+                    style={{ width: '100%', padding: '7px 10px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', color: '#333', fontFamily: 'monospace', background: '#fff', outline: 'none', cursor: 'pointer' }}
+                  >
+                    <option>First quote (CEO/founder)</option>
+                    <option>Secondary quote</option>
+                    <option>Supporting quote</option>
+                    <option>Closing quote</option>
+                    <option>Additional quote</option>
+                  </select>
+                </div>
+              ))}
             </div>
           )}
 
@@ -839,6 +886,29 @@ export default function CreateArticle4Page() {
                     >×</button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Continue button — send quotes to output panel */}
+            {(annQuotes[viewingAnn] || []).length > 0 && (
+              <div style={{ padding: '12px 18px', borderTop: `1px solid ${VS.border}`, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    const srcName = announcementNames[viewingAnn];
+                    const quotes = annQuotes[viewingAnn] || [];
+                    setStagedQuotes(prev => {
+                      // Remove existing quotes from this source, then add the new ones
+                      const kept = prev.filter(sq => sq.source !== srcName);
+                      const placements = ['First quote (CEO/founder)', 'Secondary quote', 'Closing quote', 'Supporting quote', 'Additional quote'];
+                      return [...kept, ...quotes.map((q, i) => ({ source: srcName, quote: q, placement: placements[i] || 'Additional quote' }))];
+                    });
+                    setViewingAnn(null);
+                    setSelectedText('');
+                  }}
+                  style={{ fontFamily: 'monospace', fontSize: '11px', padding: '8px 20px', borderRadius: '6px', border: 'none', background: VS.accent, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  Continue <ArrowRight size={12} />
+                </button>
               </div>
             )}
           </div>
