@@ -424,6 +424,26 @@ export default function CreateArticle4Page() {
             {briefLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating Brief…</> : <><ArrowRight size={14} /> Generate Brief</>}
           </button>
 
+          <button
+            onClick={handleConfirmAndGenerate}
+            disabled={!brief || articleLoading}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '11px', marginTop: '10px',
+              background: (!brief || articleLoading) ? VS.bg3 : `linear-gradient(135deg, ${VS.success}, #2d9980)`,
+              color: (!brief || articleLoading) ? VS.text2 : '#fff',
+              border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+              cursor: (!brief || articleLoading) ? 'not-allowed' : 'pointer',
+              boxShadow: (!brief || articleLoading) ? 'none' : '0 3px 14px rgba(78,201,176,0.2)',
+            }}
+          >
+            {articleLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating Article…</> : <><CheckCircle2 size={14} /> Generate Article</>}
+          </button>
+          {!brief && (
+            <div style={{ marginTop: '6px', fontSize: '10px', color: VS.text2, fontFamily: 'monospace', textAlign: 'center' }}>
+              Generate brief first
+            </div>
+          )}
+
           <div style={{ marginTop: '14px', padding: '10px', background: VS.bg2, borderRadius: '6px', border: `1px solid ${VS.border}` }}>
             <div style={{ fontFamily: 'monospace', fontSize: '8px', color: VS.text2, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>Workflow</div>
             {(['sources', 'brief', 'article'] as const).map((s, i) => (
@@ -707,32 +727,6 @@ export default function CreateArticle4Page() {
                 </div>
               ))}
 
-              {/* Generate Article button */}
-              <div style={{ marginTop: '20px', padding: '16px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
-                {!brief && (
-                  <p style={{ fontSize: '12px', color: '#f44747', margin: '0 0 10px', fontFamily: 'monospace' }}>
-                    A brief must be generated first. Click &quot;Generate Brief&quot; in the left panel.
-                  </p>
-                )}
-                {brief && !briefConfirmed && (
-                  <p style={{ fontSize: '12px', color: '#888', margin: '0 0 10px' }}>
-                    Clicking below will confirm the brief and generate the article using your staged content and quotes.
-                  </p>
-                )}
-                <button
-                  onClick={handleConfirmAndGenerate}
-                  disabled={!brief || articleLoading}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '12px',
-                    background: (!brief || articleLoading) ? '#ccc' : 'linear-gradient(135deg, #FF8000, #CC6600)',
-                    color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600,
-                    cursor: (!brief || articleLoading) ? 'not-allowed' : 'pointer',
-                    boxShadow: (!brief || articleLoading) ? 'none' : '0 3px 14px rgba(255,128,0,0.2)',
-                  }}
-                >
-                  {articleLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating Article…</> : <>Generate Article <ArrowRight size={14} /></>}
-                </button>
-              </div>
             </div>
           )}
 
