@@ -326,7 +326,7 @@ export default function CreateArticle4Page() {
       {/* ════════════════════════════════════════════════════
           LEFT PANEL — Source Manager (Workflow Section 2)
           ════════════════════════════════════════════════════ */}
-      <div style={{ width: '320px', minWidth: '320px', overflowY: 'auto', borderRight: `1px solid ${VS.border}`, background: VS.bg1, flexShrink: 0 }}>
+      <div style={{ width: '420px', minWidth: '420px', overflowY: 'auto', borderRight: `1px solid ${VS.border}`, background: VS.bg1, flexShrink: 0 }}>
         <div style={{ padding: '16px' }}>
           <div style={{ fontFamily: 'monospace', fontSize: '10px', color: VS.accent, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: '14px', fontWeight: 600 }}>Source Manager</div>
 
@@ -419,6 +419,102 @@ export default function CreateArticle4Page() {
               </div>
             )}
           </div>
+
+          {/* ── Staged Announcement Content (moved from right panel) ── */}
+          {stagedContent && (
+            <div style={{ marginBottom: '14px', padding: '12px', background: VS.bg2, borderRadius: '8px', border: `1px solid ${VS.border}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: '9px', padding: '2px 6px', borderRadius: '3px', background: 'rgba(206,147,216,0.2)', color: '#ce93d8', flexShrink: 0 }}>ANN</span>
+                  <span style={{ fontSize: '11px', color: VS.text0, fontWeight: 600, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stagedContent.source}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button onClick={() => setContentEditMode(v => !v)} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '3px 7px', borderRadius: '3px', border: contentEditMode ? '1px solid #FF8000' : `1px solid ${VS.border}`, background: contentEditMode ? VS.accentGlow : 'transparent', color: contentEditMode ? VS.accent : VS.text2, cursor: 'pointer' }}>{contentEditMode ? 'View' : 'Edit'}</button>
+                  <button onClick={() => setStagedContent(null)} style={{ width: '20px', height: '20px', borderRadius: '3px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' }}>×</button>
+                </div>
+              </div>
+              {contentEditMode ? (
+                <textarea
+                  value={stagedContent.content}
+                  onChange={e => {
+                    const newContent = e.target.value;
+                    const srcName = stagedContent.source;
+                    setStagedContent({ source: srcName, content: newContent });
+                    setPastedTexts(prev => {
+                      const tag = `[FROM ANNOUNCEMENT: ${srcName}]\n`;
+                      const kept = prev.filter(t => !t.startsWith(tag));
+                      return [...kept, `${tag}${newContent}`];
+                    });
+                  }}
+                  style={{ ...inp, minHeight: '150px', maxHeight: '300px', fontSize: '11px', lineHeight: 1.6, resize: 'vertical' }}
+                />
+              ) : (
+                <div style={{ padding: '10px 12px', background: VS.bg0, border: `1px solid ${VS.border}`, borderRadius: '4px', maxHeight: '240px', overflowY: 'auto', fontSize: '11px', color: VS.text1, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {(() => {
+                    const sourceQuotes = stagedQuotes.filter(sq => sq.source === stagedContent.source).map(sq => sq.quote).filter(Boolean);
+                    if (sourceQuotes.length === 0) return stagedContent.content;
+                    const sorted = [...sourceQuotes].sort((a, b) => b.length - a.length);
+                    const escaped = sorted.map(q => q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+                    const regex = new RegExp(`(${escaped.join('|')})`, 'g');
+                    const parts = stagedContent.content.split(regex);
+                    return parts.map((part, i) => {
+                      if (sourceQuotes.includes(part)) {
+                        return <mark key={i} style={{ background: 'rgba(206,147,216,0.35)', color: VS.text0, padding: '1px 3px', borderRadius: '2px', fontStyle: 'italic' }}>{part}</mark>;
+                      }
+                      return <span key={i}>{part}</span>;
+                    });
+                  })()}
+                </div>
+              )}
+              <div style={{ fontSize: '9px', color: VS.text2, marginTop: '5px', fontFamily: 'monospace' }}>
+                {stagedContent.content.split(/\s+/).filter(Boolean).length} words
+                {stagedQuotes.filter(sq => sq.source === stagedContent.source).length > 0 && ` • ${stagedQuotes.filter(sq => sq.source === stagedContent.source).length} quote(s) highlighted`}
+              </div>
+            </div>
+          )}
+
+          {/* ── Staged Quotes (moved from right panel) ── */}
+          {stagedQuotes.length > 0 && (
+            <div style={{ marginBottom: '14px' }}>
+              <label style={lbl}>Staged Quotes ({stagedQuotes.length})</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {stagedQuotes.map((sq, i) => (
+                  <div key={`sq-${i}`} style={{ padding: '10px 12px', background: VS.bg2, border: `1px solid ${VS.border}`, borderRadius: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '9px', padding: '1px 5px', borderRadius: '3px', background: 'rgba(206,147,216,0.2)', color: '#ce93d8', fontWeight: 600 }}>QUOTE {i + 1}</span>
+                      <button onClick={() => setStagedQuotes(prev => prev.filter((_, j) => j !== i))} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '2px 6px', borderRadius: '3px', border: '1px solid rgba(244,71,71,0.3)', background: 'rgba(244,71,71,0.05)', color: VS.error, cursor: 'pointer' }}>Remove</button>
+                    </div>
+                    <div style={{ fontSize: '9px', color: VS.text2, fontFamily: 'monospace', marginBottom: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sq.source}</div>
+                    <textarea
+                      value={sq.quote}
+                      onChange={e => setStagedQuotes(prev => prev.map((q, j) => j === i ? { ...q, quote: e.target.value } : q))}
+                      rows={3}
+                      style={{ ...inp, fontSize: '11px', lineHeight: 1.5, fontStyle: 'italic', resize: 'vertical' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Generate Article button (shown when staged content/quotes exist) ── */}
+          {(stagedContent || stagedQuotes.length > 0) && (
+            <button
+              onClick={handleConfirmAndGenerate}
+              disabled={!brief || articleLoading}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '11px',
+                background: (!brief || articleLoading) ? VS.bg3 : `linear-gradient(135deg, ${VS.success}, #2d9980)`,
+                color: (!brief || articleLoading) ? VS.text2 : '#fff',
+                border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+                cursor: (!brief || articleLoading) ? 'not-allowed' : 'pointer',
+                boxShadow: (!brief || articleLoading) ? 'none' : '0 3px 14px rgba(78,201,176,0.2)',
+                marginBottom: '10px',
+              }}
+            >
+              {articleLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating Article…</> : <><CheckCircle2 size={14} /> Generate Article</>}
+            </button>
+          )}
 
           <button onClick={handleGenerateBrief} disabled={briefLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '11px', background: `linear-gradient(135deg, ${VS.accent}, ${VS.accentDim})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 3px 14px rgba(255,128,0,0.2)', opacity: briefLoading ? 0.5 : 1 }}>
             {briefLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating Brief…</> : <><ArrowRight size={14} /> Generate Brief</>}
@@ -592,7 +688,7 @@ export default function CreateArticle4Page() {
             </div>
           )}
 
-          {!hasArticle && !articleLoading && stagedQuotes.length === 0 && !stagedContent && (
+          {!hasArticle && !articleLoading && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '60px 40px', textAlign: 'center', color: VS.text2, gap: '14px' }}>
               <svg width="44" height="44" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" opacity={0.25}>
                 <rect x="8" y="6" width="32" height="36" rx="3"/>
@@ -604,135 +700,8 @@ export default function CreateArticle4Page() {
               <p style={{ fontSize: '13px', maxWidth: '320px', lineHeight: 1.6, margin: 0 }}>
                 1. Load hard sources in the left panel<br/>
                 2. Review the brief in the middle panel<br/>
-                3. Confirm the brief to generate the article
+                3. Generate the article from the left panel
               </p>
-            </div>
-          )}
-
-          {!hasArticle && !articleLoading && (stagedQuotes.length > 0 || stagedContent) && (
-            <div style={{ padding: '28px', maxWidth: '800px', margin: '0 auto' }}>
-
-              {/* Announcement Content */}
-              {stagedContent && (
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <div>
-                      <h2 style={{ fontFamily: 'sans-serif', fontSize: '18px', color: '#333', marginBottom: '2px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: '10px', padding: '2px 8px', borderRadius: '3px', background: 'rgba(206,147,216,0.2)', color: '#a055b8' }}>ANN</span>
-                        {stagedContent.source}
-                      </h2>
-                      <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>{contentEditMode ? 'Edit mode — make any changes needed.' : 'Saved quotes are highlighted. Click Edit to modify the content.'}</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <button
-                        onClick={() => setContentEditMode(v => !v)}
-                        style={{ fontFamily: 'monospace', fontSize: '10px', padding: '4px 10px', borderRadius: '4px', border: contentEditMode ? '1px solid #FF8000' : '1px solid #ddd', background: contentEditMode ? 'rgba(255,128,0,0.08)' : '#fff', color: contentEditMode ? '#FF8000' : '#666', cursor: 'pointer' }}
-                      >{contentEditMode ? 'View' : 'Edit'}</button>
-                      <button
-                        onClick={() => setStagedContent(null)}
-                        style={{ fontFamily: 'monospace', fontSize: '10px', padding: '4px 10px', borderRadius: '4px', border: '1px solid #ddd', background: '#fff', color: '#666', cursor: 'pointer' }}
-                      >Hide</button>
-                    </div>
-                  </div>
-                  {contentEditMode ? (
-                    <textarea
-                      value={stagedContent.content}
-                      onChange={e => {
-                        const newContent = e.target.value;
-                        const srcName = stagedContent.source;
-                        setStagedContent({ source: srcName, content: newContent });
-                        // Keep the pasted-text hard source in sync
-                        setPastedTexts(prev => {
-                          const tag = `[FROM ANNOUNCEMENT: ${srcName}]\n`;
-                          const kept = prev.filter(t => !t.startsWith(tag));
-                          return [...kept, `${tag}${newContent}`];
-                        });
-                      }}
-                      style={{ width: '100%', minHeight: '300px', padding: '16px 20px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '13px', color: '#444', lineHeight: 1.7, fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-                    />
-                  ) : (
-                    <div style={{ padding: '16px 20px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', minHeight: '300px', maxHeight: '500px', overflowY: 'auto', fontSize: '13px', color: '#444', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {(() => {
-                        const sourceQuotes = stagedQuotes.filter(sq => sq.source === stagedContent.source).map(sq => sq.quote).filter(Boolean);
-                        if (sourceQuotes.length === 0) return stagedContent.content;
-                        // Sort by length descending so longer quotes match before shorter substrings
-                        const sorted = [...sourceQuotes].sort((a, b) => b.length - a.length);
-                        const escaped = sorted.map(q => q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-                        const regex = new RegExp(`(${escaped.join('|')})`, 'g');
-                        const parts = stagedContent.content.split(regex);
-                        return parts.map((part, i) => {
-                          if (sourceQuotes.includes(part)) {
-                            return <mark key={i} style={{ background: 'rgba(206,147,216,0.35)', color: '#333', padding: '1px 3px', borderRadius: '2px', fontStyle: 'italic' }}>{part}</mark>;
-                          }
-                          return <span key={i}>{part}</span>;
-                        });
-                      })()}
-                    </div>
-                  )}
-                  <div style={{ fontSize: '11px', color: '#999', marginTop: '6px', fontFamily: 'monospace' }}>
-                    {stagedContent.content.split(/\s+/).filter(Boolean).length} words • {stagedContent.content.length} characters
-                    {stagedQuotes.filter(sq => sq.source === stagedContent.source).length > 0 && ` • ${stagedQuotes.filter(sq => sq.source === stagedContent.source).length} quote(s) highlighted`}
-                  </div>
-                </div>
-              )}
-
-              {/* Staged Quotes */}
-              {stagedQuotes.length > 0 && (
-              <>
-              <h2 style={{ fontFamily: 'sans-serif', fontSize: '18px', color: '#333', marginBottom: '4px', fontWeight: 700 }}>Staged Quotes</h2>
-              <p style={{ fontSize: '13px', color: '#888', marginBottom: '20px' }}>Edit the quote text and placement below. When you&apos;re ready, click Generate Article below (or confirm the brief in the middle panel).</p>
-              </>
-              )}
-
-              {stagedQuotes.map((sq, i) => (
-                <div key={i} style={{ padding: '14px 16px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontFamily: 'monospace', fontSize: '10px', padding: '2px 8px', borderRadius: '3px', background: 'rgba(206,147,216,0.2)', color: '#a055b8', fontWeight: 600 }}>QUOTE {i + 1}</span>
-                    <button
-                      onClick={() => setStagedQuotes(prev => prev.filter((_, j) => j !== i))}
-                      style={{ fontFamily: 'monospace', fontSize: '10px', padding: '3px 8px', borderRadius: '4px', border: '1px solid #f44747', background: 'rgba(244,71,71,0.05)', color: '#f44747', cursor: 'pointer' }}
-                    >Remove</button>
-                  </div>
-
-                  <label style={{ display: 'block', fontSize: '10px', fontFamily: 'monospace', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Source</label>
-                  <div style={{ fontSize: '12px', color: '#666', fontFamily: 'monospace', marginBottom: '10px', padding: '6px 10px', background: '#f5f5f5', borderRadius: '4px' }}>{sq.source}</div>
-
-                  <label style={{ display: 'block', fontSize: '10px', fontFamily: 'monospace', color: '#999', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>Quote (editable)</label>
-                  <textarea
-                    value={sq.quote}
-                    onChange={e => setStagedQuotes(prev => prev.map((q, j) => j === i ? { ...q, quote: e.target.value } : q))}
-                    rows={3}
-                    style={{ width: '100%', padding: '8px 11px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '13px', color: '#333', lineHeight: 1.5, fontFamily: 'sans-serif', fontStyle: 'italic', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
-                  />
-                </div>
-              ))}
-
-              {/* Generate Article button */}
-              <div style={{ marginTop: '20px', padding: '16px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px' }}>
-                {!brief && (
-                  <p style={{ fontSize: '12px', color: '#f44747', margin: '0 0 10px', fontFamily: 'monospace' }}>
-                    A brief must be generated first. Click &quot;Generate Brief&quot; in the left panel.
-                  </p>
-                )}
-                {brief && !briefConfirmed && (
-                  <p style={{ fontSize: '12px', color: '#888', margin: '0 0 10px' }}>
-                    Clicking below will confirm the brief and generate the article using your staged content and quotes.
-                  </p>
-                )}
-                <button
-                  onClick={handleConfirmAndGenerate}
-                  disabled={!brief || articleLoading}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '12px',
-                    background: (!brief || articleLoading) ? '#ccc' : 'linear-gradient(135deg, #FF8000, #CC6600)',
-                    color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600,
-                    cursor: (!brief || articleLoading) ? 'not-allowed' : 'pointer',
-                    boxShadow: (!brief || articleLoading) ? 'none' : '0 3px 14px rgba(255,128,0,0.2)',
-                  }}
-                >
-                  {articleLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating Article…</> : <>Generate Article <ArrowRight size={14} /></>}
-                </button>
-              </div>
             </div>
           )}
 
