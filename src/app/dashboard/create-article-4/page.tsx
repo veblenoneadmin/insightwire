@@ -563,18 +563,6 @@ export default function CreateArticle4Page() {
                 })}
               </div>
 
-              {/* ── Confirm Brief & Generate ── */}
-              {!briefConfirmed && (
-                <button onClick={handleConfirmAndGenerate} disabled={articleLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '11px', background: `linear-gradient(135deg, ${VS.success}, #2d9980)`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 3px 14px rgba(78,201,176,0.2)' }}>
-                  <CheckCircle2 size={14} /> Confirm Brief & Generate Article
-                </button>
-              )}
-              {briefConfirmed && (
-                <div style={{ padding: '10px', background: 'rgba(78,201,176,0.08)', border: '1px solid rgba(78,201,176,0.2)', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle2 size={14} style={{ color: VS.success }} />
-                  <span style={{ fontFamily: 'monospace', fontSize: '11px', color: VS.success }}>Brief confirmed — article generating</span>
-                </div>
-              )}
             </>
           )}
         </div>
