@@ -469,6 +469,27 @@ export default function CreateArticle4Page() {
                 </div>
               </div>
 
+              {/* ── Journalist-Selected Quotes ── */}
+              {stagedQuotes.length > 0 && (
+                <div style={{ marginBottom: '18px' }}>
+                  <label style={lbl}>Journalist-Selected Quotes ({stagedQuotes.length})</label>
+                  <div style={{ fontSize: '10px', color: VS.text2, marginBottom: '8px', fontFamily: 'monospace' }}>
+                    These were sent to the brief and will be used in the article.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {stagedQuotes.map((sq, i) => (
+                      <div key={`jq-${i}`} style={{ padding: '10px 12px', background: 'rgba(206,147,216,0.06)', border: '1px solid rgba(206,147,216,0.3)', borderRadius: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '9px', padding: '1px 5px', borderRadius: '3px', background: 'rgba(206,147,216,0.2)', color: '#ce93d8' }}>QUOTE {i + 1}</span>
+                          <span style={{ fontFamily: 'monospace', fontSize: '9px', color: VS.text2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sq.source}</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: VS.text0, lineHeight: 1.5, fontStyle: 'italic' }}>&ldquo;{sq.quote}&rdquo;</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* ── Soft Source Suggestions (Workflow Section 3) ── */}
               <div style={{ marginBottom: '18px' }}>
                 <label style={lbl}>Soft Source Suggestions</label>
