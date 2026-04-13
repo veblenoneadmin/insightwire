@@ -47,6 +47,8 @@ export default function CreateArticle4Page() {
   const [sourceUrls, setSourceUrls] = useState<string[]>(['']);
   const [fileContents, setFileContents] = useState<string[]>([]);
   const [fileNames, setFileNames]       = useState<string[]>([]);
+  const [announcementContents, setAnnouncementContents] = useState<string[]>([]);
+  const [announcementNames, setAnnouncementNames]       = useState<string[]>([]);
   const [pastedTexts, setPastedTexts]   = useState<string[]>([]);
   const [topic, setTopic]               = useState('');
   const [error, setError]               = useState('');
@@ -69,7 +71,7 @@ export default function CreateArticle4Page() {
 
   // ── Add Source Modal state ───────────────────────────────
   const [addModalOpen, setAddModalOpen]         = useState(false);
-  const [addModalTab, setAddModalTab]           = useState<'url' | 'file' | 'text' | 'saved'>('url');
+  const [addModalTab, setAddModalTab]           = useState<'url' | 'file' | 'text' | 'announcement' | 'saved'>('url');
   const [modalUrl, setModalUrl]                 = useState('');
   const [modalText, setModalText]               = useState('');
   const [savedSources, setSavedSources]         = useState<{ id: number; url: string; title: string; source_type: string; rationale: string }[]>([]);
@@ -112,6 +114,26 @@ export default function CreateArticle4Page() {
     if (!files) return;
     await handleFileUpload(files);
     setAddModalOpen(false);
+  };
+
+  const addModalAnnouncementSource = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    for (const file of Array.from(files)) {
+      try {
+        const text = await extractFileText(file);
+        if (!text.trim()) { setError(`Could not extract text from ${file.name}`); continue; }
+        setAnnouncementContents(prev => [...prev, text.trim()]);
+        setAnnouncementNames(prev => [...prev, file.name]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : `Failed to process ${file.name}`);
+      }
+    }
+    setAddModalOpen(false);
+  };
+
+  const removeAnnouncement = (idx: number) => {
+    setAnnouncementContents(prev => prev.filter((_, i) => i !== idx));
+    setAnnouncementNames(prev => prev.filter((_, i) => i !== idx));
   };
 
   const addModalTextSource = () => {
@@ -180,8 +202,8 @@ export default function CreateArticle4Page() {
     setError('');
     const urls = sourceUrls.filter(s => s.trim());
     const texts = pastedTexts.filter(s => s.trim());
-    if (urls.length === 0 && fileContents.length === 0 && texts.length === 0) {
-      setError('Please provide at least one hard source (URL, file, or pasted text).'); return;
+    if (urls.length === 0 && fileContents.length === 0 && texts.length === 0 && announcementContents.length === 0) {
+      setError('Please provide at least one hard source.'); return;
     }
     setBriefLoading(true);
     setBrief('');
@@ -193,7 +215,7 @@ export default function CreateArticle4Page() {
       const res = await fetch('/api/generate-brief', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sources: urls, fileContents: [...fileContents, ...texts], topic }),
+        body: JSON.stringify({ sources: urls, fileContents: [...fileContents, ...texts, ...announcementContents], topic }),
       });
       if (!res.ok) { const d = await res.json().catch(() => null); setError(d?.error || `Brief generation failed: HTTP ${res.status}`); return; }
       const data = await res.json();
@@ -342,6 +364,13 @@ export default function CreateArticle4Page() {
                 <span style={{ fontFamily: 'monospace', fontSize: '8px', padding: '1px 4px', borderRadius: '2px', background: 'rgba(255,128,0,0.15)', color: VS.accent, flexShrink: 0 }}>TEXT</span>
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{txt.slice(0, 60)}{txt.length > 60 ? '…' : ''}</span>
                 <button onClick={() => setPastedTexts(prev => prev.filter((_, j) => j !== i))} style={{ width: '18px', height: '18px', borderRadius: '3px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', flexShrink: 0 }}>×</button>
+              </div>
+            ))}
+            {announcementNames.map((name, i) => (
+              <div key={`ann-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: VS.bg2, border: `1px solid ${VS.border}`, borderRadius: '4px', fontSize: '11px', color: VS.text1, fontFamily: 'monospace' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '8px', padding: '1px 4px', borderRadius: '2px', background: 'rgba(206,147,216,0.2)', color: '#ce93d8', flexShrink: 0 }}>ANN</span>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                <button onClick={() => removeAnnouncement(i)} style={{ width: '18px', height: '18px', borderRadius: '3px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', flexShrink: 0 }}>×</button>
               </div>
             ))}
           </div>
@@ -580,7 +609,7 @@ export default function CreateArticle4Page() {
 
             {/* Tabs */}
             <div style={{ display: 'flex', borderBottom: `1px solid ${VS.border}` }}>
-              {([['url', 'URL'], ['file', 'File Upload'], ['text', 'Paste Text'], ['saved', 'Saved Sources']] as const).map(([key, label]) => (
+              {([['url', 'URL'], ['file', 'File'], ['text', 'Text'], ['announcement', 'Announcement'], ['saved', 'Saved']] as const).map(([key, label]) => (
                 <button key={key} onClick={() => setAddModalTab(key)}
                   style={{ flex: 1, padding: '10px 8px', background: addModalTab === key ? VS.bg2 : 'transparent', border: 'none', borderBottom: addModalTab === key ? `2px solid ${VS.accent}` : '2px solid transparent', color: addModalTab === key ? VS.accent : VS.text2, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: addModalTab === key ? 600 : 400 }}>
                   {label}
@@ -636,6 +665,21 @@ export default function CreateArticle4Page() {
                       Add Text
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* Announcement Tab */}
+              {addModalTab === 'announcement' && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '20px 0' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(206,147,216,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Upload size={24} style={{ color: '#ce93d8' }} />
+                  </div>
+                  <div style={{ fontSize: '13px', color: VS.text1, textAlign: 'center' }}>Upload an announcement</div>
+                  <div style={{ fontSize: '11px', color: VS.text2, textAlign: 'center' }}>ASX announcements, press releases, company filings</div>
+                  <label style={{ fontFamily: 'monospace', fontSize: '11px', padding: '8px 18px', borderRadius: '6px', background: '#ce93d8', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                    Choose PDF, DOCX, or TXT
+                    <input type="file" accept=".pdf,.doc,.docx,.txt" multiple style={{ display: 'none' }} onChange={e => addModalAnnouncementSource(e.target.files)} />
+                  </label>
                 </div>
               )}
 
