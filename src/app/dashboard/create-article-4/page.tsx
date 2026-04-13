@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, Copy, Download, Maximize2, Minimize2, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, Eye, ArrowRight, Pencil, Eye as EyeIcon } from 'lucide-react';
+import { Upload, Copy, Download, Maximize2, Minimize2, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, Eye, ArrowRight, Pencil, Eye as EyeIcon, BookmarkPlus, X } from 'lucide-react';
 
 // ── Palette ───────────────────────────────────────────────
 const VS = {
@@ -66,6 +66,46 @@ export default function CreateArticle4Page() {
   const [articleLoading, setArticleLoading] = useState(false);
   const [fullscreen, setFullscreen]         = useState(false);
   const [editMode, setEditMode]             = useState(false);
+
+  // ── Saved Sources Modal state ───────────────────────────
+  const [savedModalOpen, setSavedModalOpen]     = useState(false);
+  const [savedSources, setSavedSources]         = useState<{ id: number; url: string; title: string; source_type: string; rationale: string }[]>([]);
+  const [savedLoading, setSavedLoading]         = useState(false);
+  const [selectedSaved, setSelectedSaved]       = useState<Set<number>>(new Set());
+
+  const openSavedModal = async () => {
+    setSavedModalOpen(true);
+    setSavedLoading(true);
+    setSelectedSaved(new Set());
+    try {
+      const res = await fetch('/api/sources');
+      if (res.ok) {
+        const data = await res.json();
+        setSavedSources(data.sources || []);
+      }
+    } catch { /* ignore */ }
+    finally { setSavedLoading(false); }
+  };
+
+  const toggleSavedSelection = (id: number) => {
+    setSelectedSaved(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const addSelectedSources = () => {
+    const selected = savedSources.filter(s => selectedSaved.has(s.id));
+    const newUrls = selected.filter(s => s.url).map(s => s.url);
+    if (newUrls.length > 0) {
+      setSourceUrls(prev => {
+        const filtered = prev.filter(u => u.trim());
+        return [...filtered, ...newUrls, ''];
+      });
+    }
+    setSavedModalOpen(false);
+  };
 
   // ── File extraction (client-side) ───────────────────────
   const extractFileText = async (file: File): Promise<string> => {
@@ -270,6 +310,9 @@ export default function CreateArticle4Page() {
 
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
             <button onClick={() => setSourceUrls(prev => [...prev, ''])} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer' }}>+ URL</button>
+            <button onClick={openSavedModal} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <BookmarkPlus size={10} /> Add Source
+            </button>
             <label style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <Upload size={10} /> Upload file
               <input type="file" accept=".pdf,.doc,.docx,.txt" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e.target.files)} />
@@ -524,6 +567,60 @@ export default function CreateArticle4Page() {
           .bna-body hr { border: none; border-top: 1px solid #eee; margin: 22px 0; }
         `}</style>
       </div>
+
+      {/* ── Saved Sources Modal ────────────────────────────── */}
+      {savedModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setSavedModalOpen(false)}>
+          <div style={{ background: VS.bg1, border: `1px solid ${VS.border}`, borderRadius: '12px', width: '520px', maxHeight: '70vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: `1px solid ${VS.border}` }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: VS.accent, textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Saved Sources</div>
+              <button onClick={() => setSavedModalOpen(false)} style={{ background: 'transparent', border: 'none', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={16} /></button>
+            </div>
+
+            {/* List */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 18px' }}>
+              {savedLoading && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px' }}>
+                  <Loader2 size={16} style={{ color: VS.accent, animation: 'spin 1s linear infinite' }} />
+                  <span style={{ fontFamily: 'monospace', fontSize: '11px', color: VS.text2 }}>Loading saved sources…</span>
+                </div>
+              )}
+              {!savedLoading && savedSources.length === 0 && (
+                <div style={{ padding: '40px 0', textAlign: 'center', fontSize: '12px', color: VS.text2 }}>No saved sources yet.</div>
+              )}
+              {savedSources.map(s => {
+                const checked = selectedSaved.has(s.id);
+                return (
+                  <div key={s.id} onClick={() => toggleSavedSelection(s.id)}
+                    style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px', background: checked ? VS.accentGlow : VS.bg2, border: `1px solid ${checked ? VS.accent : VS.border}`, borderRadius: '6px', marginBottom: '6px', cursor: 'pointer', transition: 'border-color 0.15s' }}>
+                    <div style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${checked ? VS.accent : VS.border}`, background: checked ? VS.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                      {checked && <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>✓</span>}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '12px', color: VS.text0, fontWeight: 600, marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
+                      <div style={{ fontSize: '10px', color: VS.text2, fontFamily: 'monospace', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.url}</div>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: '9px', padding: '1px 5px', borderRadius: '3px', background: 'rgba(86,156,214,0.15)', color: VS.blue }}>{s.source_type}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '12px 18px', borderTop: `1px solid ${VS.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: VS.text2 }}>{selectedSaved.size} selected</span>
+              <button onClick={addSelectedSources} disabled={selectedSaved.size === 0}
+                style={{ fontFamily: 'monospace', fontSize: '11px', padding: '7px 16px', borderRadius: '6px', border: 'none', background: selectedSaved.size > 0 ? VS.accent : VS.bg3, color: selectedSaved.size > 0 ? '#fff' : VS.text2, cursor: selectedSaved.size > 0 ? 'pointer' : 'default', fontWeight: 600 }}>
+                Add {selectedSaved.size > 0 ? `${selectedSaved.size} Source${selectedSaved.size > 1 ? 's' : ''}` : 'Sources'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
