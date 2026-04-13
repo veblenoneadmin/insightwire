@@ -37,7 +37,7 @@ const BNA_STYLE_PROFILE = `# BNA Style Guide
 
 **Positive news:** Reported straightforwardly. Growth metrics and deal figures do the talking. Executive enthusiasm is conveyed through their own quotes, not editorial adjectives. Occasional colourful verbs in headlines — *"surges"*, *"storms back"*, *"fires up"* — but the body remains factual.
 
-**Negative news:** Reported directly, without hedging or softening. BNA uses blunt language: *"sacked"*, *"collapsed"*, *"fell into administration"*, *"hit with a $57 million fine"*. Consequences are quantified immediately. No editorial sympathy or moralising.
+**Negative news:** Reported directly, without hedging or softening. BNA uses blunt language: *"sacked"*, *"collapsed"*, *"fell into administration"*, *"hit with a \$57 million fine"*. Consequences are quantified immediately. No editorial sympathy or moralising.
 
 **Regulatory/legal stories:** Both sides presented. Regulator quotes given prominence. Allegations reported as allegations; confirmed findings reported as findings. BNA does not editorially adjudicate guilt.
 
@@ -65,11 +65,11 @@ Company name leads or appears within the first three words in the vast majority 
 
 | Pattern | Example |
 |---|---|
-| Company + verb + dollar amount + purpose | *"Zelira Therapeutics raises $49 million to advance autism treatment"* |
-| Company + verb + target + price | *"Catapult Group lends weight to growth strategy with $43m deal for US sports-tech Perch"* |
+| Company + verb + dollar amount + purpose | *"Zelira Therapeutics raises \$49 million to advance autism treatment"* |
+| Company + verb + target + price | *"Catapult Group lends weight to growth strategy with \$43m deal for US sports-tech Perch"* |
 | Company + verb + result + cause | *"WiseTech profit surges 80pc as global logistics giants sign up"* |
 | Leadership change | *"Coles appoints Leah Weckert as its first female CEO"* |
-| Quoted phrase + colon + news | *"'Not going to happen': BlueScope Steel rejects SGH consortium's $13.2b bid"* |
+| Quoted phrase + colon + news | *"'Not going to happen': BlueScope Steel rejects SGH consortium's \$13.2b bid"* |
 | Regulatory action | *"ASIC sues Harvey Norman alleging 'misleading' interest-free sales"* |
 | Wordplay/pun | *"Bottoms up: Sydney cold brew coffee liqueur brand Mr Black acquired by Diageo"* |
 | Contrast/tension | *"DroneShield shares shot down despite record revenue"* |
@@ -199,7 +199,7 @@ Everything the reader needs to know is in the first sentence. No throat-clearing
 - Court proceedings or formal speeches
 - Historical statements or past events
 
-> **AI generation note:** When the source is a press release or ASX announcement (the most common input type), all quotes must use **"said"**, not **"says"**. The "says" default applies only to original, live interview content. Mixing tenses within a single article based on source type is correct and expected.
+> **AI generation note:** The AI never produces quotes — it only places quotes that the journalist provides as inputs. When placing a journalist-provided quote, the AI must use the correct attribution verb: **"said"** if the journalist indicates the quote originates from a press release or ASX announcement; **"says"** if the journalist indicates it comes from a live interview. The journalist should indicate the source type when providing quotes. If unspecified, default to **"said"**.
 
 **Other permitted verbs (used sparingly for variety):**
 - *adds* — for follow-on quotes from the same speaker
@@ -246,6 +246,10 @@ When the title is long, it follows the name:
 ### Quote Content
 
 Quotes provide colour, strategic rationale, or forward-looking statements. They do not repeat facts already stated in the journalist's prose. The journalist carries the facts; the quote carries the perspective.
+
+### AI Quote Rule
+
+> **The AI must never produce any direct quotes.** It does not extract quotes from source documents, generate quotes, paraphrase statements into quotes, or infer what someone might have said. All quotes are supplied by the journalist as separate inputs. The AI's role is strictly to place journalist-provided quotes into the article at the correct editorial position with proper BNA attribution formatting (full name + title + company on first use, "said" for announcement-sourced quotes, "says" for live interview quotes). If no quotes are provided by the journalist, the article contains no quoted material whatsoever.
 
 ---
 
@@ -391,7 +395,7 @@ BNA assumes a business-literate reader. Financial jargon (EBITDA, NPAT, ARR, WAL
 7. **Never writes a summary conclusion paragraph.** Articles end on a quote, a fact, or a share price note.
 8. **Never uses passive voice in ledes.** The subject always acts.
 9. **Never uses anonymous sources** as standard practice. All quotes are attributed to named individuals with titles.
-9a. **Never treats AI-generated or hallucinated quotes as sourced quotes.** Every quote in the article must be traceable to a named person in the source document (press release, ASX announcement, or interview transcript).
+9a. **Never generates, infers, copies, or paraphrases any quote.** The AI must not produce direct quotes under any circumstances — not from source documents, not from its own generation, not by paraphrasing. All quotes used in the article must be explicitly provided by the journalist as separate inputs. If no quotes are provided, the article is written entirely as journalist prose with no quoted material.
 10. **Never uses promotional language** in the reporter's voice (*"groundbreaking"*, *"revolutionary"*, *"game-changing"* belong in quotes only).
 11. **Never omits the ASX ticker** on first mention of a listed company.
 12. **Never omits the city-based descriptor** on first mention of a company.
@@ -430,14 +434,13 @@ BNA assumes a business-literate reader. Financial jargon (EBITDA, NPAT, ARR, WAL
 
 ## 11. AI Article Generation Rules
 
-> **Cross-reference:** This section operates within the source handling rules defined in \`insightwire_workflow.md\`. All references to "sources" in this section refer to **hard sources** as defined in that document. Soft sources have no standing here — they do not exist in the article pipeline until the writer promotes them.
-
 This section governs how AI-assisted article generation must behave when producing BNA-style content. These rules are derived from editorial standards and direct feedback from BNA journalists. All generated articles must pass these checks before being presented to an editor for review.
 
 ### Source Integrity
 
 - **The source document must always be retained alongside the generated article.** The editor's workflow is: read the generated article first, then cross-check against the original press release or ASX announcement. The AI output must never be presented in isolation.
-- **All quotes must be traceable to a named individual in the source document.** AI must not generate, infer, or paraphrase quotes that are not explicitly present in the source. If no usable quote exists in the source, insert a placeholder: *[No quote available in source — seek comment from CEO/spokesperson]*.
+- **The AI must never write, extract, copy, paraphrase, or infer any direct quotes.** All quotes that appear in the final article must be provided by the journalist as explicit inputs — separate from the source documents. The AI's job is to weave those journalist-provided quotes into the article at the editorially correct position, with proper BNA attribution formatting. If the journalist provides no quotes, the article must contain zero quoted material.
+- **Quotes from source documents are off-limits.** Even if a press release or ASX announcement contains direct quotes from named individuals, the AI must not extract or reproduce them. Only the journalist decides which quotes enter the article, and they supply them directly.
 - **Article type must match source type.** A press release produces a hard news article. An opinion piece or think-tank publication (e.g. The Conversation) is a different article mode and must not be treated as a news source for a standard BNA news story.
 
 ### Headline Generation
@@ -467,31 +470,9 @@ This section governs how AI-assisted article generation must behave when produci
   - [ ] Dollar figure matches source
   - [ ] ASX ticker included on first mention (if listed)
   - [ ] City-based descriptor on first mention
-  - [ ] All quotes attributed to named individuals from the source
+  - [ ] All quotes in the article were provided by the journalist — none extracted from source or AI-generated
   - [ ] No summary conclusion paragraph
   - [ ] Headline does not start with "The"
-  - [ ] Announcement date confirmed as current (within 2–3 days)
-
-### Output Block Structure
-
-Each article generation call produces three distinct output blocks. The application must parse and render them separately.
-
-1. **Article body** — the full article as markdown, following all BNA style rules above.
-2. **References JSON** — a structured array mapping every key claim to its hard source, as defined in \`insightwire_workflow.md\` Section 6. This is returned as a fenced \`json:references\` code block after the article body.
-3. **Fact-check checklist** — the checklist above, returned as a fenced \`json:checklist\` code block with each item as a key-value pair (\`item\`: string, \`pass\`: boolean). The model evaluates each check against the generated article and the hard sources.
-
-\`\`\`json:checklist
-[
-  { "item": "Dollar figure matches source", "pass": true },
-  { "item": "ASX ticker included on first mention (if listed)", "pass": true },
-  { "item": "City-based descriptor on first mention", "pass": true },
-  { "item": "All quotes attributed to named individuals from the source", "pass": true },
-  { "item": "No summary conclusion paragraph", "pass": true },
-  { "item": "Headline does not start with The", "pass": true },
-  { "item": "Announcement date confirmed as current (within 2-3 days)", "pass": false }
-]
-\`\`\`
-
-The Editor Q&A section is appended after the checklist as plain text. It is not structured as JSON — it is conversational and intended for human interaction.`;
+  - [ ] Announcement date confirmed as current (within 2–3 days)`;
 
 export default BNA_STYLE_PROFILE;
