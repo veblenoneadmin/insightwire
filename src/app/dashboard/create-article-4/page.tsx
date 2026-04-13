@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, Copy, Download, Maximize2, Minimize2, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, Eye, ArrowRight, Pencil, Eye as EyeIcon, BookmarkPlus, X } from 'lucide-react';
+import { Plus, Upload, Copy, Download, Maximize2, Minimize2, Loader2, CheckCircle2, ThumbsUp, ThumbsDown, Eye, ArrowRight, Pencil, Eye as EyeIcon, X } from 'lucide-react';
 
 // ── Palette ───────────────────────────────────────────────
 const VS = {
@@ -67,16 +67,22 @@ export default function CreateArticle4Page() {
   const [fullscreen, setFullscreen]         = useState(false);
   const [editMode, setEditMode]             = useState(false);
 
-  // ── Saved Sources Modal state ───────────────────────────
-  const [savedModalOpen, setSavedModalOpen]     = useState(false);
+  // ── Add Source Modal state ───────────────────────────────
+  const [addModalOpen, setAddModalOpen]         = useState(false);
+  const [addModalTab, setAddModalTab]           = useState<'url' | 'file' | 'text' | 'saved'>('url');
+  const [modalUrl, setModalUrl]                 = useState('');
+  const [modalText, setModalText]               = useState('');
   const [savedSources, setSavedSources]         = useState<{ id: number; url: string; title: string; source_type: string; rationale: string }[]>([]);
   const [savedLoading, setSavedLoading]         = useState(false);
   const [selectedSaved, setSelectedSaved]       = useState<Set<number>>(new Set());
 
-  const openSavedModal = async () => {
-    setSavedModalOpen(true);
-    setSavedLoading(true);
+  const openAddModal = async () => {
+    setAddModalOpen(true);
+    setAddModalTab('url');
+    setModalUrl('');
+    setModalText('');
     setSelectedSaved(new Set());
+    setSavedLoading(true);
     try {
       const res = await fetch('/api/sources');
       if (res.ok) {
@@ -95,16 +101,33 @@ export default function CreateArticle4Page() {
     });
   };
 
-  const addSelectedSources = () => {
+  const addModalUrlSource = () => {
+    if (!modalUrl.trim()) return;
+    setSourceUrls(prev => [...prev.filter(u => u.trim()), modalUrl.trim(), '']);
+    setModalUrl('');
+    setAddModalOpen(false);
+  };
+
+  const addModalFileSource = async (files: FileList | null) => {
+    if (!files) return;
+    await handleFileUpload(files);
+    setAddModalOpen(false);
+  };
+
+  const addModalTextSource = () => {
+    if (!modalText.trim()) return;
+    setPastedTexts(prev => [...prev, modalText.trim()]);
+    setModalText('');
+    setAddModalOpen(false);
+  };
+
+  const addModalSavedSources = () => {
     const selected = savedSources.filter(s => selectedSaved.has(s.id));
     const newUrls = selected.filter(s => s.url).map(s => s.url);
     if (newUrls.length > 0) {
-      setSourceUrls(prev => {
-        const filtered = prev.filter(u => u.trim());
-        return [...filtered, ...newUrls, ''];
-      });
+      setSourceUrls(prev => [...prev.filter(u => u.trim()), ...newUrls, '']);
     }
-    setSavedModalOpen(false);
+    setAddModalOpen(false);
   };
 
   // ── File extraction (client-side) ───────────────────────
@@ -297,59 +320,35 @@ export default function CreateArticle4Page() {
             <input style={inp} value={topic} onChange={e => setTopic(e.target.value)} placeholder="e.g. Lead with funding implications for QLD tech" />
           </div>
 
-          <label style={lbl}>Hard Sources — URLs</label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '7px' }}>
-            {sourceUrls.map((src, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ fontFamily: 'monospace', fontSize: '9px', color: VS.text2, width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
-                <input style={{ ...inp, flex: 1 }} type="url" value={src} onChange={e => setSourceUrls(prev => prev.map((s, j) => j === i ? e.target.value : s))} placeholder="https://…" />
-                {i > 0 && <button onClick={() => setSourceUrls(prev => prev.filter((_, j) => j !== i))} style={{ width: '24px', height: '24px', borderRadius: '4px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', flexShrink: 0 }}>×</button>}
+          <label style={lbl}>Hard Sources</label>
+          {/* List of added sources */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+            {sourceUrls.filter(u => u.trim()).map((src, i) => (
+              <div key={`url-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: VS.bg2, border: `1px solid ${VS.border}`, borderRadius: '4px', fontSize: '11px', color: VS.text1, fontFamily: 'monospace' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '8px', padding: '1px 4px', borderRadius: '2px', background: 'rgba(86,156,214,0.15)', color: VS.blue, flexShrink: 0 }}>URL</span>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{src}</span>
+                <button onClick={() => setSourceUrls(prev => prev.filter((_, j) => j !== i))} style={{ width: '18px', height: '18px', borderRadius: '3px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', flexShrink: 0 }}>×</button>
               </div>
             ))}
-          </div>
-
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px' }}>
-            <button onClick={() => setSourceUrls(prev => [...prev, ''])} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer' }}>+ URL</button>
-            <button onClick={openSavedModal} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <BookmarkPlus size={10} /> Add Source
-            </button>
-            <label style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Upload size={10} /> Upload file
-              <input type="file" accept=".pdf,.doc,.docx,.txt" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e.target.files)} />
-            </label>
-          </div>
-
-          {fileNames.length > 0 && (
-            <div style={{ marginBottom: '14px' }}>
-              <label style={lbl}>Hard Sources — Files</label>
-              {fileNames.map((name, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: VS.accentGlow, borderRadius: '4px', fontSize: '11px', color: VS.text1, fontFamily: 'monospace', marginBottom: '4px' }}>
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                  <button onClick={() => removeFile(i)} style={{ width: '18px', height: '18px', borderRadius: '3px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', flexShrink: 0 }}>×</button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div style={{ marginBottom: '14px' }}>
-            <label style={lbl}>Hard Sources — Pasted Text</label>
+            {fileNames.map((name, i) => (
+              <div key={`file-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: VS.bg2, border: `1px solid ${VS.border}`, borderRadius: '4px', fontSize: '11px', color: VS.text1, fontFamily: 'monospace' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '8px', padding: '1px 4px', borderRadius: '2px', background: 'rgba(78,201,176,0.15)', color: VS.success, flexShrink: 0 }}>FILE</span>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                <button onClick={() => removeFile(i)} style={{ width: '18px', height: '18px', borderRadius: '3px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', flexShrink: 0 }}>×</button>
+              </div>
+            ))}
             {pastedTexts.map((txt, i) => (
-              <div key={i} style={{ marginBottom: '6px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '3px' }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: '9px', color: VS.accent, background: VS.accentGlow, padding: '2px 6px', borderRadius: '3px', fontWeight: 600 }}>TEXT {i + 1}</span>
-                  <button onClick={() => setPastedTexts(prev => prev.filter((_, j) => j !== i))} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '2px 6px', borderRadius: '3px', border: '1px solid rgba(244,71,71,0.3)', background: 'rgba(244,71,71,0.05)', color: VS.error, cursor: 'pointer' }}>Remove</button>
-                </div>
-                <textarea
-                  value={txt}
-                  onChange={e => setPastedTexts(prev => prev.map((t, j) => j === i ? e.target.value : t))}
-                  rows={4}
-                  placeholder="Paste raw text here — press release, ASX announcement, article content…"
-                  style={{ ...inp, fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.5, resize: 'vertical' }}
-                />
+              <div key={`text-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: VS.bg2, border: `1px solid ${VS.border}`, borderRadius: '4px', fontSize: '11px', color: VS.text1, fontFamily: 'monospace' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '8px', padding: '1px 4px', borderRadius: '2px', background: 'rgba(255,128,0,0.15)', color: VS.accent, flexShrink: 0 }}>TEXT</span>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{txt.slice(0, 60)}{txt.length > 60 ? '…' : ''}</span>
+                <button onClick={() => setPastedTexts(prev => prev.filter((_, j) => j !== i))} style={{ width: '18px', height: '18px', borderRadius: '3px', border: `1px solid ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', flexShrink: 0 }}>×</button>
               </div>
             ))}
-            <button onClick={() => setPastedTexts(prev => [...prev, ''])} style={{ fontFamily: 'monospace', fontSize: '9px', padding: '4px 9px', borderRadius: '4px', border: `1px dashed ${VS.border}`, background: 'transparent', color: VS.text2, cursor: 'pointer' }}>+ Paste Text</button>
           </div>
+
+          <button onClick={openAddModal} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', padding: '9px', border: `1px dashed ${VS.border}`, borderRadius: '8px', background: 'transparent', color: VS.text2, fontFamily: 'monospace', fontSize: '11px', cursor: 'pointer', marginBottom: '14px' }}>
+            <Plus size={12} /> Add Source
+          </button>
 
           <button onClick={handleGenerateBrief} disabled={briefLoading} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '11px', background: `linear-gradient(135deg, ${VS.accent}, ${VS.accentDim})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 3px 14px rgba(255,128,0,0.2)', opacity: briefLoading ? 0.5 : 1 }}>
             {briefLoading ? <><Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> Generating Brief…</> : <><ArrowRight size={14} /> Generate Brief</>}
@@ -568,55 +567,117 @@ export default function CreateArticle4Page() {
         `}</style>
       </div>
 
-      {/* ── Saved Sources Modal ────────────────────────────── */}
-      {savedModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setSavedModalOpen(false)}>
-          <div style={{ background: VS.bg1, border: `1px solid ${VS.border}`, borderRadius: '12px', width: '520px', maxHeight: '70vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+      {/* ── Add Source Modal ──────────────────────────────── */}
+      {addModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setAddModalOpen(false)}>
+          <div style={{ background: VS.bg1, border: `1px solid ${VS.border}`, borderRadius: '12px', width: '520px', maxHeight: '75vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: `1px solid ${VS.border}` }}>
-              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: VS.accent, textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Saved Sources</div>
-              <button onClick={() => setSavedModalOpen(false)} style={{ background: 'transparent', border: 'none', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={16} /></button>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: VS.accent, textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>Add Source</div>
+              <button onClick={() => setAddModalOpen(false)} style={{ background: 'transparent', border: 'none', color: VS.text2, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><X size={16} /></button>
             </div>
 
-            {/* List */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 18px' }}>
-              {savedLoading && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px' }}>
-                  <Loader2 size={16} style={{ color: VS.accent, animation: 'spin 1s linear infinite' }} />
-                  <span style={{ fontFamily: 'monospace', fontSize: '11px', color: VS.text2 }}>Loading saved sources…</span>
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: `1px solid ${VS.border}` }}>
+              {([['url', 'URL'], ['file', 'File Upload'], ['text', 'Paste Text'], ['saved', 'Saved Sources']] as const).map(([key, label]) => (
+                <button key={key} onClick={() => setAddModalTab(key)}
+                  style={{ flex: 1, padding: '10px 8px', background: addModalTab === key ? VS.bg2 : 'transparent', border: 'none', borderBottom: addModalTab === key ? `2px solid ${VS.accent}` : '2px solid transparent', color: addModalTab === key ? VS.accent : VS.text2, fontFamily: 'monospace', fontSize: '10px', cursor: 'pointer', fontWeight: addModalTab === key ? 600 : 400 }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
+
+              {/* URL Tab */}
+              {addModalTab === 'url' && (
+                <div>
+                  <label style={lbl}>Source URL</label>
+                  <input style={inp} type="url" value={modalUrl} onChange={e => setModalUrl(e.target.value)} placeholder="https://…" autoFocus
+                    onKeyDown={e => { if (e.key === 'Enter') addModalUrlSource(); }} />
+                  <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={addModalUrlSource} disabled={!modalUrl.trim()}
+                      style={{ fontFamily: 'monospace', fontSize: '11px', padding: '8px 18px', borderRadius: '6px', border: 'none', background: modalUrl.trim() ? VS.accent : VS.bg3, color: modalUrl.trim() ? '#fff' : VS.text2, cursor: modalUrl.trim() ? 'pointer' : 'default', fontWeight: 600 }}>
+                      Add URL
+                    </button>
+                  </div>
                 </div>
               )}
-              {!savedLoading && savedSources.length === 0 && (
-                <div style={{ padding: '40px 0', textAlign: 'center', fontSize: '12px', color: VS.text2 }}>No saved sources yet.</div>
-              )}
-              {savedSources.map(s => {
-                const checked = selectedSaved.has(s.id);
-                return (
-                  <div key={s.id} onClick={() => toggleSavedSelection(s.id)}
-                    style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px', background: checked ? VS.accentGlow : VS.bg2, border: `1px solid ${checked ? VS.accent : VS.border}`, borderRadius: '6px', marginBottom: '6px', cursor: 'pointer', transition: 'border-color 0.15s' }}>
-                    <div style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${checked ? VS.accent : VS.border}`, background: checked ? VS.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
-                      {checked && <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>✓</span>}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '12px', color: VS.text0, fontWeight: 600, marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
-                      <div style={{ fontSize: '10px', color: VS.text2, fontFamily: 'monospace', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.url}</div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ fontFamily: 'monospace', fontSize: '9px', padding: '1px 5px', borderRadius: '3px', background: 'rgba(86,156,214,0.15)', color: VS.blue }}>{s.source_type}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
 
-            {/* Footer */}
-            <div style={{ padding: '12px 18px', borderTop: `1px solid ${VS.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontFamily: 'monospace', fontSize: '10px', color: VS.text2 }}>{selectedSaved.size} selected</span>
-              <button onClick={addSelectedSources} disabled={selectedSaved.size === 0}
-                style={{ fontFamily: 'monospace', fontSize: '11px', padding: '7px 16px', borderRadius: '6px', border: 'none', background: selectedSaved.size > 0 ? VS.accent : VS.bg3, color: selectedSaved.size > 0 ? '#fff' : VS.text2, cursor: selectedSaved.size > 0 ? 'pointer' : 'default', fontWeight: 600 }}>
-                Add {selectedSaved.size > 0 ? `${selectedSaved.size} Source${selectedSaved.size > 1 ? 's' : ''}` : 'Sources'}
-              </button>
+              {/* File Upload Tab */}
+              {addModalTab === 'file' && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '20px 0' }}>
+                  <Upload size={28} style={{ color: VS.text2 }} />
+                  <div style={{ fontSize: '13px', color: VS.text1, textAlign: 'center' }}>Upload PDF, DOCX, or TXT files</div>
+                  <label style={{ fontFamily: 'monospace', fontSize: '11px', padding: '8px 18px', borderRadius: '6px', background: VS.accent, color: '#fff', cursor: 'pointer', fontWeight: 600 }}>
+                    Choose Files
+                    <input type="file" accept=".pdf,.doc,.docx,.txt" multiple style={{ display: 'none' }} onChange={e => addModalFileSource(e.target.files)} />
+                  </label>
+                </div>
+              )}
+
+              {/* Paste Text Tab */}
+              {addModalTab === 'text' && (
+                <div>
+                  <label style={lbl}>Paste text</label>
+                  <textarea
+                    value={modalText}
+                    onChange={e => setModalText(e.target.value)}
+                    rows={8}
+                    placeholder="Paste raw text here — press release, ASX announcement, article content…"
+                    style={{ ...inp, fontFamily: 'monospace', fontSize: '11px', lineHeight: 1.5, resize: 'vertical' }}
+                    autoFocus
+                  />
+                  <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={addModalTextSource} disabled={!modalText.trim()}
+                      style={{ fontFamily: 'monospace', fontSize: '11px', padding: '8px 18px', borderRadius: '6px', border: 'none', background: modalText.trim() ? VS.accent : VS.bg3, color: modalText.trim() ? '#fff' : VS.text2, cursor: modalText.trim() ? 'pointer' : 'default', fontWeight: 600 }}>
+                      Add Text
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Saved Sources Tab */}
+              {addModalTab === 'saved' && (
+                <div>
+                  {savedLoading && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px' }}>
+                      <Loader2 size={16} style={{ color: VS.accent, animation: 'spin 1s linear infinite' }} />
+                      <span style={{ fontFamily: 'monospace', fontSize: '11px', color: VS.text2 }}>Loading…</span>
+                    </div>
+                  )}
+                  {!savedLoading && savedSources.length === 0 && (
+                    <div style={{ padding: '40px 0', textAlign: 'center', fontSize: '12px', color: VS.text2 }}>No saved sources yet.</div>
+                  )}
+                  {savedSources.map(s => {
+                    const checked = selectedSaved.has(s.id);
+                    return (
+                      <div key={s.id} onClick={() => toggleSavedSelection(s.id)}
+                        style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 12px', background: checked ? VS.accentGlow : VS.bg2, border: `1px solid ${checked ? VS.accent : VS.border}`, borderRadius: '6px', marginBottom: '6px', cursor: 'pointer' }}>
+                        <div style={{ width: '18px', height: '18px', borderRadius: '4px', border: `2px solid ${checked ? VS.accent : VS.border}`, background: checked ? VS.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
+                          {checked && <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>✓</span>}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '12px', color: VS.text0, fontWeight: 600, marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
+                          <div style={{ fontSize: '10px', color: VS.text2, fontFamily: 'monospace', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.url}</div>
+                          <span style={{ fontFamily: 'monospace', fontSize: '9px', padding: '1px 5px', borderRadius: '3px', background: 'rgba(86,156,214,0.15)', color: VS.blue }}>{s.source_type}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!savedLoading && savedSources.length > 0 && (
+                    <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontFamily: 'monospace', fontSize: '10px', color: VS.text2 }}>{selectedSaved.size} selected</span>
+                      <button onClick={addModalSavedSources} disabled={selectedSaved.size === 0}
+                        style={{ fontFamily: 'monospace', fontSize: '11px', padding: '8px 18px', borderRadius: '6px', border: 'none', background: selectedSaved.size > 0 ? VS.accent : VS.bg3, color: selectedSaved.size > 0 ? '#fff' : VS.text2, cursor: selectedSaved.size > 0 ? 'pointer' : 'default', fontWeight: 600 }}>
+                        Add {selectedSaved.size > 0 ? `${selectedSaved.size} Source${selectedSaved.size > 1 ? 's' : ''}` : 'Sources'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
